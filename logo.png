@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f48c42"/>
+      <stop offset="100%" stop-color="#e85d04"/>
+    </linearGradient>
+    <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e85d04" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#e85d04"/>
+      <stop offset="100%" stop-color="#e85d04" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="256" height="256" rx="52" fill="url(#bgGrad)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="128" x2="256" y2="128" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+  <line x1="128" y1="0" x2="128" y2="256" stroke="#ffffff" stroke-opacity="0.03" stroke-width="1"/>
+
+  <!-- Glow circle behind arrow -->
+  <circle cx="128" cy="120" r="58" fill="none" stroke="#e85d04" stroke-opacity="0.12" stroke-width="28"/>
+  <circle cx="128" cy="120" r="44" fill="none" stroke="#e85d04" stroke-opacity="0.08" stroke-width="14"/>
+
+  <!-- Arrow stem (vertical) -->
+  <rect x="118" y="68" width="20" height="68" rx="10" fill="url(#arrowGrad)"/>
+
+  <!-- Arrow head -->
+  <path d="M84 138 L128 182 L172 138" stroke="url(#arrowGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Bottom line -->
+  <rect x="68" y="194" width="120" height="14" rx="7" fill="url(#lineGrad)"/>
+</svg>
