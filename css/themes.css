@@ -1,0 +1,96 @@
+/* ═══════════════════════════════════════════════
+   Provider Themes — Per-platform accent overrides
+   ═══════════════════════════════════════════════
+   Activated by setting data-provider on <body>.
+   Each block overrides the accent token family
+   defined in tokens.css.
+   ═══════════════════════════════════════════════ */
+
+/* ─── Twitter / X — Blue ─── */
+body[data-provider="twitter"] {
+    --accent:        #1d9bf0;
+    --accent-hover:  #4db8f7;
+    --accent-dark:   #1577b8;
+
+    --accent-a02: rgba(29, 155, 240, 0.02);
+    --accent-a07: rgba(29, 155, 240, 0.07);
+    --accent-a10: rgba(29, 155, 240, 0.1);
+    --accent-a12: rgba(29, 155, 240, 0.12);
+    --accent-a14: rgba(29, 155, 240, 0.14);
+    --accent-a24: rgba(29, 155, 240, 0.24);
+    --accent-a36: rgba(29, 155, 240, 0.36);
+    --accent-a45: rgba(29, 155, 240, 0.45);
+
+    --shadow-accent-glow: 0 6px 20px rgba(29, 155, 240, 0.3);
+    --shadow-bar-glow:    0 0 16px rgba(29, 155, 240, 0.24);
+    --shadow-accent-dot:  0 0 12px rgba(29, 155, 240, 0.45);
+}
+
+/* ─── YouTube — Red ─── */
+body[data-provider="youtube"] {
+    --accent:        #ff0000;
+    --accent-hover:  #ff4444;
+    --accent-dark:   #cc0000;
+
+    --accent-a02: rgba(255, 0, 0, 0.02);
+    --accent-a07: rgba(255, 0, 0, 0.07);
+    --accent-a10: rgba(255, 0, 0, 0.1);
+    --accent-a12: rgba(255, 0, 0, 0.12);
+    --accent-a14: rgba(255, 0, 0, 0.14);
+    --accent-a24: rgba(255, 0, 0, 0.24);
+    --accent-a36: rgba(255, 0, 0, 0.36);
+    --accent-a45: rgba(255, 0, 0, 0.45);
+
+    --shadow-accent-glow: 0 6px 20px rgba(255, 0, 0, 0.28);
+    --shadow-bar-glow:    0 0 16px rgba(255, 0, 0, 0.22);
+    --shadow-accent-dot:  0 0 12px rgba(255, 0, 0, 0.45);
+}
+
+/* ─── Instagram — Pink ─── */
+body[data-provider="instagram"] {
+    --accent:        #e1306c;
+    --accent-hover:  #f05a90;
+    --accent-dark:   #b8204f;
+
+    --accent-a02: rgba(225, 48, 108, 0.02);
+    --accent-a07: rgba(225, 48, 108, 0.07);
+    --accent-a10: rgba(225, 48, 108, 0.1);
+    --accent-a12: rgba(225, 48, 108, 0.12);
+    --accent-a14: rgba(225, 48, 108, 0.14);
+    --accent-a24: rgba(225, 48, 108, 0.24);
+    --accent-a36: rgba(225, 48, 108, 0.36);
+    --accent-a45: rgba(225, 48, 108, 0.45);
+
+    --shadow-accent-glow: 0 6px 20px rgba(225, 48, 108, 0.3);
+    --shadow-bar-glow:    0 0 16px rgba(225, 48, 108, 0.24);
+    --shadow-accent-dot:  0 0 12px rgba(225, 48, 108, 0.45);
+}
+
+/* ─── TikTok — Cyan ─── */
+body[data-provider="tiktok"] {
+    --accent:        #25f4ee;
+    --accent-hover:  #5ef7f2;
+    --accent-dark:   #1ac4bf;
+
+    --accent-a02: rgba(37, 244, 238, 0.02);
+    --accent-a07: rgba(37, 244, 238, 0.07);
+    --accent-a10: rgba(37, 244, 238, 0.1);
+    --accent-a12: rgba(37, 244, 238, 0.12);
+    --accent-a14: rgba(37, 244, 238, 0.14);
+    --accent-a24: rgba(37, 244, 238, 0.24);
+    --accent-a36: rgba(37, 244, 238, 0.36);
+    --accent-a45: rgba(37, 244, 238, 0.45);
+
+    --shadow-accent-glow: 0 6px 20px rgba(37, 244, 238, 0.25);
+    --shadow-bar-glow:    0 0 16px rgba(37, 244, 238, 0.2);
+    --shadow-accent-dot:  0 0 12px rgba(37, 244, 238, 0.4);
+}
+
+/* TikTok text on accent needs dark color for readability */
+body[data-provider="tiktok"] .download-btn {
+    color: #0a0a0a;
+}
+
+body[data-provider="tiktok"] .option-value {
+    color: var(--accent-dark);
+}

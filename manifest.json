@@ -1,12 +1,11 @@
 {
     "id": "VIDEOFETCH001XTW",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "platform": "all",
     "arch": "all",
     "name": "Video Fetch",
     "logo": "/logo.png",
-    "keywords": ["video", "download", "twitter", "x", "social media"],
-    "devTools": false,
+    "keywords": ["video", "download", "twitter", "x", "youtube", "instagram", "tiktok", "social media", "yt-dlp"],
     "main": {
         "url": "index.html",
         "width": 560,

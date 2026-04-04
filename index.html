@@ -6,600 +6,18 @@
     <title>Video Fetch</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
 
-        :root {
-            --bg-primary:    #0d0d0d;
-            --bg-card:       #161616;
-            --bg-input:      #1e1e1e;
-            --bg-hover:      #242424;
-            --border:        #2a2a2a;
-            --border-focus:  #e85d04;
-            --accent:        #e85d04;
-            --accent-hover:  #f48c42;
-            --text-primary:  #f0f0f0;
-            --text-secondary:#888;
-            --text-muted:    #555;
-            --success:       #22c55e;
-            --error:         #ef4444;
-            --warning:       #f59e0b;
-            --x-color:       #1d9bf0;
-        }
-
-        html, body {
-            height: 100%;
-            background: var(--bg-primary);
-            font-family: 'Inter', -apple-system, sans-serif;
-            color: var(--text-primary);
-            overflow: hidden;
-        }
-
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* ─── Header ─── */
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 20px 14px;
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
-        }
-
-        .logo-mark {
-            width: 34px;
-            height: 34px;
-            border-radius: 9px;
-            background: linear-gradient(135deg, #e85d04, #f48c42);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .logo-mark svg { display: block; }
-
-        .header-text h1 {
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: -0.3px;
-            color: var(--text-primary);
-        }
-
-        .header-text p {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 1px;
-        }
-
-        /* ─── Platform tabs ─── */
-        .platform-tabs {
-            display: flex;
-            gap: 6px;
-            padding: 14px 20px 0;
-            flex-shrink: 0;
-        }
-
-        .platform-tab {
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            padding: 8px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: transparent;
-            color: var(--text-secondary);
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.18s ease;
-        }
-
-        .platform-tab:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-            border-color: #383838;
-        }
-
-        .platform-tab.active {
-            background: var(--bg-card);
-            border-color: var(--accent);
-            color: var(--text-primary);
-        }
-
-        .platform-tab .tab-icon {
-            width: 16px;
-            height: 16px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .platform-tab .tab-icon.x-icon {
-            background: #000;
-        }
-
-        .platform-tab .badge-soon {
-            font-size: 9px;
-            font-weight: 600;
-            background: #2a2a2a;
-            color: var(--text-muted);
-            padding: 2px 5px;
-            border-radius: 3px;
-            letter-spacing: 0.3px;
-        }
-
-        /* ─── Main content ─── */
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .content::-webkit-scrollbar { width: 4px; }
-        .content::-webkit-scrollbar-track { background: transparent; }
-        .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-        /* ─── URL Input ─── */
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 7px;
-        }
-
-        .input-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-        }
-
-        .url-row {
-            display: flex;
-            gap: 8px;
-        }
-
-        .url-input {
-            flex: 1;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 13px;
-            padding: 10px 14px;
-            outline: none;
-            transition: border-color 0.18s;
-        }
-
-        .url-input::placeholder { color: var(--text-muted); }
-
-        .url-input:focus {
-            border-color: var(--border-focus);
-        }
-
-        .paste-btn {
-            padding: 10px 14px;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            color: var(--text-secondary);
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.18s;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .paste-btn:hover {
-            background: var(--bg-hover);
-            color: var(--text-primary);
-            border-color: #383838;
-        }
-
-        /* ─── Options ─── */
-        .options-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px;
-        }
-
-        .options-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 12px;
-        }
-
-        .option-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .option-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .option-row:first-of-type { padding-top: 0; }
-
-        .option-info { flex: 1; }
-
-        .option-name {
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .option-desc {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .option-value {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--accent);
-            background: rgba(232, 93, 4, 0.1);
-            padding: 4px 10px;
-            border-radius: 5px;
-        }
-
-        .tag-input-row {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .tag-input {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 7px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 12px;
-            padding: 7px 10px;
-            outline: none;
-            transition: border-color 0.18s;
-            width: 100%;
-        }
-
-        .tag-input:focus { border-color: var(--border-focus); }
-        .tag-input::placeholder { color: var(--text-muted); }
-
-
-        /* ─── Download button ─── */
-        .download-btn {
-            width: 100%;
-            padding: 13px;
-            background: var(--accent);
-            border: none;
-            border-radius: 10px;
-            color: #fff;
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            letter-spacing: -0.2px;
-        }
-
-        .download-btn:hover:not(:disabled) {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(232, 93, 4, 0.35);
-        }
-
-        .download-btn:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
-
-        .download-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* ─── Progress ─── */
-        .progress-section {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .progress-section.visible { display: flex; }
-
-        .progress-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .progress-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .progress-pct {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .progress-bar-track {
-            width: 100%;
-            height: 4px;
-            background: var(--bg-input);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-            border-radius: 2px;
-            transition: width 0.3s ease;
-            width: 0%;
-        }
-
-        .progress-info-text {
-            font-size: 11px;
-            color: var(--text-muted);
-            font-family: 'SF Mono', 'Fira Code', monospace;
-        }
-
-        /* ─── Status / Log ─── */
-        .status-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            display: none;
-        }
-
-        .status-box.visible { display: block; }
-
-        .status-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-top: 4px;
-            flex-shrink: 0;
-            background: var(--text-muted);
-        }
-
-        .status-dot.loading {
-            background: var(--warning);
-            animation: pulse 1s infinite;
-        }
-
-        .status-dot.success { background: var(--success); }
-        .status-dot.error { background: var(--error); }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .status-message {
-            font-size: 12.5px;
-            color: var(--text-primary);
-            line-height: 1.5;
-            word-break: break-all;
-        }
-
-        .status-message.error-msg { color: var(--error); }
-        .status-message.success-msg { color: var(--success); }
-
-        /* ─── History ─── */
-        .history-section {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .history-title {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .history-clear {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-family: inherit;
-            font-size: 10px;
-            cursor: pointer;
-            padding: 2px 6px;
-            border-radius: 4px;
-            transition: all 0.15s;
-        }
-
-        .history-clear:hover { color: var(--error); background: rgba(239, 68, 68, 0.1); }
-
-        .history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .history-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 12px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            transition: border-color 0.15s, background 0.15s;
-        }
-
-        .history-item:hover {
-            border-color: #383838;
-            background: var(--bg-hover);
-        }
-
-        .history-status-icon {
-            width: 22px;
-            height: 22px;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .history-status-icon.ok { background: rgba(34, 197, 94, 0.12); }
-        .history-status-icon.fail { background: rgba(239, 68, 68, 0.12); }
-
-        .history-info { flex: 1; min-width: 0; }
-
-        .history-url {
-            font-size: 11.5px;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .history-meta {
-            font-size: 10.5px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .empty-history {
-            text-align: center;
-            padding: 16px;
-            color: var(--text-muted);
-            font-size: 12px;
-        }
-
-        /* ─── Footer ─── */
-        .footer {
-            padding: 10px 20px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-shrink: 0;
-        }
-
-        .footer-note {
-            font-size: 10.5px;
-            color: var(--text-muted);
-        }
-
-        .ytdlp-status {
-            font-size: 10.5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .ytdlp-indicator {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--text-muted);
-        }
-
-        .ytdlp-indicator.ok { background: var(--success); }
-        .ytdlp-indicator.missing { background: var(--error); }
-        .ytdlp-text { color: var(--text-muted); }
-
-        /* ─── Missing tool warning ─── */
-        .warning-banner {
-            background: rgba(245, 158, 11, 0.08);
-            border: 1px solid rgba(245, 158, 11, 0.25);
-            border-radius: 9px;
-            padding: 12px 14px;
-            display: none;
-            gap: 10px;
-            align-items: flex-start;
-        }
-
-        .warning-banner.visible { display: flex; }
-
-        .warning-icon { flex-shrink: 0; margin-top: 1px; }
-
-        .warning-text {
-            flex: 1;
-        }
-
-        .warning-title {
-            font-size: 12.5px;
-            font-weight: 600;
-            color: var(--warning);
-            margin-bottom: 4px;
-        }
-
-        .warning-body {
-            font-size: 11.5px;
-            color: #a07520;
-            line-height: 1.5;
-        }
-
-        .warning-body code {
-            background: rgba(245, 158, 11, 0.15);
-            padding: 1px 5px;
-            border-radius: 3px;
-            font-family: 'SF Mono', 'Fira Code', monospace;
-            font-size: 10.5px;
-        }
-
-        .install-btn {
-            margin-top: 8px;
-            padding: 6px 12px;
-            background: rgba(245, 158, 11, 0.15);
-            border: 1px solid rgba(245, 158, 11, 0.3);
-            border-radius: 6px;
-            color: var(--warning);
-            font-family: inherit;
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .install-btn:hover { background: rgba(245, 158, 11, 0.25); }
-    </style>
+    <!-- Design system (order matters) -->
+    <link rel="stylesheet" href="css/tokens.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/progress.css">
+    <link rel="stylesheet" href="css/status.css">
+    <link rel="stylesheet" href="css/history.css">
+    <link rel="stylesheet" href="css/themes.css">
 </head>
-<body>
+<body data-provider="twitter">
 
 <!-- Header -->
 <div class="header">
@@ -617,7 +35,8 @@
 
 <!-- Platform selector -->
 <div class="platform-tabs">
-    <button class="platform-tab active" id="tab-x" onclick="selectPlatform('x')">
+    <div class="tab-indicator" id="tabIndicator"></div>
+    <button class="platform-tab active" id="tab-twitter" data-provider-id="twitter" type="button">
         <div class="tab-icon x-icon">
             <svg width="10" height="10" viewBox="0 0 1200 1227" fill="none">
                 <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.163 519.284ZM569.165 687.828L521.697 619.384L144.011 79.6944H306.615L611.412 515.685L658.88 584.129L1055.08 1150.3H892.48L569.165 687.828Z" fill="white"/>
@@ -625,21 +44,32 @@
         </div>
         X / Twitter
     </button>
-    <button class="platform-tab" disabled style="cursor:not-allowed; opacity:0.45;" title="Coming soon">
-        <div class="tab-icon" style="background:#ff0000; border-radius:3px;">
+    <button class="platform-tab" id="tab-youtube" data-provider-id="youtube" type="button">
+        <div class="tab-icon yt-icon">
             <svg width="10" height="7" viewBox="0 0 10 7" fill="none">
                 <path d="M9.5 1.08C9.39 0.64 9.05 0.3 8.61 0.19C7.85 0 5 0 5 0C5 0 2.15 0 1.39 0.19C0.95 0.3 0.61 0.64 0.5 1.08C0.31 1.84 0.31 3.5 0.31 3.5C0.31 3.5 0.31 5.16 0.5 5.92C0.61 6.36 0.95 6.7 1.39 6.81C2.15 7 5 7 5 7C5 7 7.85 7 8.61 6.81C9.05 6.7 9.39 6.36 9.5 5.92C9.69 5.16 9.69 3.5 9.69 3.5C9.69 3.5 9.69 1.84 9.5 1.08Z" fill="white"/>
                 <path d="M4 5L6.5 3.5L4 2V5Z" fill="#ff0000"/>
             </svg>
         </div>
         YouTube
-        <span class="badge-soon">SOON</span>
     </button>
-    <button class="platform-tab" disabled style="cursor:not-allowed; opacity:0.45;" title="Coming soon">
-        <div class="tab-icon" style="background: linear-gradient(45deg,#405de6,#e1306c,#fd1d1d,#f56040,#fcaf45,#ffdc80); border-radius:3px;">
+    <button class="platform-tab" id="tab-instagram" data-provider-id="instagram" type="button">
+        <div class="tab-icon ig-icon">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" stroke-width="2.2"/>
+                <circle cx="12" cy="12" r="5" stroke="white" stroke-width="2.2"/>
+                <circle cx="18" cy="6" r="1.5" fill="white"/>
+            </svg>
         </div>
         Instagram
-        <span class="badge-soon">SOON</span>
+    </button>
+    <button class="platform-tab" id="tab-tiktok" data-provider-id="tiktok" type="button">
+        <div class="tab-icon tt-icon">
+            <svg width="10" height="12" viewBox="0 0 20 24" fill="none">
+                <path d="M16 0C16 3.3 18.7 6 22 6V10C19.5 10 17.3 9 16 7.4V16C16 20.4 12.4 24 8 24C3.6 24 0 20.4 0 16C0 11.6 3.6 8 8 8V12C5.8 12 4 13.8 4 16C4 18.2 5.8 20 8 20C10.2 20 12 18.2 12 16V0H16Z" fill="white"/>
+            </svg>
+        </div>
+        TikTok
     </button>
 </div>
 
@@ -662,13 +92,13 @@
                 Run: <code>pip install yt-dlp</code><br>
                 or: <code>winget install yt-dlp</code>
             </div>
-            <button class="install-btn" onclick="openInstallGuide()">📖 Install Guide</button>
+            <button class="install-btn" id="installBtn" type="button">Install Guide</button>
         </div>
     </div>
 
     <!-- URL input -->
     <div class="input-group">
-        <div class="input-label">Tweet / Post URL</div>
+        <div class="input-label" id="urlLabel">Tweet / Post URL</div>
         <div class="url-row">
             <input
                 type="text"
@@ -678,8 +108,8 @@
                 autocomplete="off"
                 spellcheck="false"
             />
-            <button class="paste-btn" onclick="pasteFromClipboard()" title="Paste from clipboard">
-                📋 Paste
+            <button class="paste-btn" id="pasteBtn" title="Paste from clipboard" type="button">
+                Paste
             </button>
         </div>
     </div>
@@ -688,16 +118,18 @@
     <div class="options-card">
         <div class="options-title">Download Options</div>
 
-        <div class="option-row">
-            <div class="option-info">
-                <div class="option-name">Quality</div>
-                <div class="option-desc">Best available with audio</div>
+        <div class="provider-options" id="providerOptions" aria-live="polite">
+            <div class="option-row">
+                <div class="option-info">
+                    <div class="option-name">Quality</div>
+                    <div class="option-desc">Best available with audio</div>
+                </div>
+                <div class="option-value">Best + Audio</div>
             </div>
-            <div class="option-value">Best + Audio</div>
         </div>
 
-        <div class="option-row" style="border-bottom: none; padding-bottom:0;">
-            <div class="option-info" style="margin-bottom: 8px;">
+        <div class="option-row option-row-tags">
+            <div class="option-info">
                 <div class="option-name">Tags</div>
                 <div class="option-desc">Comma-separated tags for Eagle</div>
             </div>
@@ -713,15 +145,49 @@
     </div>
 
     <!-- Progress -->
-    <div class="progress-section" id="progressSection">
-        <div class="progress-header">
-            <span class="progress-label" id="progressLabel">Downloading...</span>
-            <span class="progress-pct" id="progressPct">0%</span>
+    <div class="progress-section" id="progressSection" data-progress-state="preparing">
+        <div class="progress-card">
+            <div class="progress-overline">
+                <span class="progress-kicker">Download status</span>
+                <span class="progress-stage-badge" id="progressStageBadge">Preparing</span>
+            </div>
+            <div class="progress-header">
+                <div class="progress-copy">
+                    <span class="progress-label" id="progressLabel">Preparing download...</span>
+                    <div class="progress-info-text" id="progressInfo"></div>
+                </div>
+                <span class="progress-pct" id="progressPct">0%</span>
+            </div>
+            <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-stage-rail" id="progressStageRail" aria-label="Download stages">
+                <div class="progress-stage-step is-active" data-stage-step="preparing">
+                    <span class="progress-stage-dot"></span>
+                    <span class="progress-stage-text">Preparing</span>
+                </div>
+                <div class="progress-stage-step" data-stage-step="downloading">
+                    <span class="progress-stage-dot"></span>
+                    <span class="progress-stage-text">Downloading</span>
+                </div>
+                <div class="progress-stage-step" data-stage-step="merging">
+                    <span class="progress-stage-dot"></span>
+                    <span class="progress-stage-text">Merging</span>
+                </div>
+                <div class="progress-stage-step" data-stage-step="importing">
+                    <span class="progress-stage-dot"></span>
+                    <span class="progress-stage-text">Importing</span>
+                </div>
+                <div class="progress-stage-step" data-stage-step="success">
+                    <span class="progress-stage-dot"></span>
+                    <span class="progress-stage-text">Done</span>
+                </div>
+                <div class="progress-stage-step" data-stage-step="failure">
+                    <span class="progress-stage-dot"></span>
+                    <span class="progress-stage-text">Error</span>
+                </div>
+            </div>
         </div>
-        <div class="progress-bar-track">
-            <div class="progress-bar-fill" id="progressFill"></div>
-        </div>
-        <div class="progress-info-text" id="progressInfo"></div>
     </div>
 
     <!-- Status -->
@@ -733,7 +199,7 @@
     </div>
 
     <!-- Download button -->
-    <button class="download-btn" id="downloadBtn" onclick="startDownload()">
+    <button class="download-btn" id="downloadBtn" type="button">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M2 13H14" stroke="white" stroke-width="2" stroke-linecap="round"/>
@@ -745,7 +211,7 @@
     <div class="history-section" id="historySection" style="display:none">
         <div class="history-title">
             Recent Downloads
-            <button class="history-clear" onclick="clearHistory()">Clear</button>
+            <button class="history-clear" id="historyClearBtn" type="button">Clear</button>
         </div>
         <div class="history-list" id="historyList"></div>
     </div>

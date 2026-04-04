@@ -1,0 +1,101 @@
+/* ═══════════════════════════════════════════════
+   Status — Status box, warning banner
+   ═══════════════════════════════════════════════ */
+
+/* ─── Status box ─── */
+.status-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-12) var(--space-14);
+    display: none;
+}
+
+.status-box.visible { display: block; }
+
+.status-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-10);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: var(--space-4);
+    flex-shrink: 0;
+    background: var(--text-muted);
+}
+
+.status-dot.loading {
+    background: var(--warning);
+    animation: pulse 1s infinite;
+}
+
+.status-dot.success { background: var(--success); }
+.status-dot.error   { background: var(--error); }
+
+.status-message {
+    font-size: var(--text-md);
+    color: var(--text-primary);
+    line-height: 1.5;
+    word-break: break-all;
+}
+
+.status-message.error-msg   { color: var(--error); }
+.status-message.success-msg { color: var(--success); }
+
+/* ─── Warning banner ─── */
+.warning-banner {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: var(--radius-lg);
+    padding: var(--space-12) var(--space-14);
+    display: none;
+    gap: var(--space-10);
+    align-items: flex-start;
+}
+
+.warning-banner.visible { display: flex; }
+
+.warning-icon { flex-shrink: 0; margin-top: 1px; }
+
+.warning-text { flex: 1; }
+
+.warning-title {
+    font-size: var(--text-md);
+    font-weight: 600;
+    color: var(--warning);
+    margin-bottom: var(--space-4);
+}
+
+.warning-body {
+    font-size: var(--text-sm);
+    color: var(--warning);
+    line-height: 1.5;
+}
+
+.warning-body code {
+    background: rgba(245, 158, 11, 0.15);
+    padding: 1px 5px;
+    border-radius: var(--radius-xs);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+}
+
+.install-btn {
+    margin-top: var(--space-8);
+    padding: var(--space-6) var(--space-12);
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: var(--space-6);
+    color: var(--warning);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.install-btn:hover { background: rgba(245, 158, 11, 0.25); }

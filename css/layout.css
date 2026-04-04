@@ -1,0 +1,82 @@
+/* ═══════════════════════════════════════════════
+   Layout — Header, content area, footer
+   ═══════════════════════════════════════════════ */
+
+/* ─── Header ─── */
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    padding: var(--space-18) var(--space-20) var(--space-14);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.logo-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.logo-mark svg { display: block; }
+
+.header-text h1 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+}
+
+.header-text p {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-top: 1px;
+}
+
+/* ─── Main content ─── */
+.content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-16) var(--space-20);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-14);
+}
+
+/* ─── Footer ─── */
+.footer {
+    padding: var(--space-10) var(--space-20);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.footer-note {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.ytdlp-status {
+    font-size: var(--text-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+.ytdlp-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.ytdlp-indicator.ok      { background: var(--success); }
+.ytdlp-indicator.missing  { background: var(--error); }
+.ytdlp-text               { color: var(--text-muted); }

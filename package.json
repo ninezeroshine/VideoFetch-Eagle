@@ -1,0 +1,15 @@
+{
+  "name": "videofetch-eagle-plugin",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Local validation scripts for the VideoFetch Eagle plugin",
+  "scripts": {
+    "test": "node scripts/run-tests.js",
+    "test:file-discovery": "node scripts/test-file-discovery.js",
+    "test:progress": "node scripts/test-progress-parser.js",
+    "test:providers": "node scripts/test-providers.js"
+  },
+  "dependencies": {
+    "motion": "^10.18.0"
+  }
+}
