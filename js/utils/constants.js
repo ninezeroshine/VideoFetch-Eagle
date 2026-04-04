@@ -9,11 +9,13 @@ const INSTALL_GUIDE_URL = 'https://github.com/yt-dlp/yt-dlp#installation';
 const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.mov', '.m4v', '.avi', '.flv', '.ts'];
 const DOWNLOAD_BUTTON_LABEL = 'Download Video';
 const DOWNLOAD_BUTTON_LOADING_LABEL = 'Downloading...';
+const DOWNLOAD_BUTTON_STOP_LABEL = 'Stop';
 
 module.exports = {
     DEFAULT_PROVIDER_ID,
     DOWNLOAD_BUTTON_LABEL,
     DOWNLOAD_BUTTON_LOADING_LABEL,
+    DOWNLOAD_BUTTON_STOP_LABEL,
     HISTORY_STORAGE_KEY,
     INSTALL_GUIDE_URL,
     MAX_HISTORY_ITEMS,

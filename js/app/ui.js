@@ -1,6 +1,6 @@
 'use strict';
 
-const { DOWNLOAD_BUTTON_LABEL, DOWNLOAD_BUTTON_LOADING_LABEL } = require('../utils/constants');
+const { DOWNLOAD_BUTTON_LABEL, DOWNLOAD_BUTTON_LOADING_LABEL, DOWNLOAD_BUTTON_STOP_LABEL } = require('../utils/constants');
 const { escapeHtml } = require('../utils/html');
 
 const PROGRESS_STAGE_SEQUENCE = ['preparing', 'downloading', 'merging', 'importing', 'success', 'failure'];
@@ -266,7 +266,8 @@ function createUi(options) {
         onOpenInstallGuide,
         onPaste,
         onReuseUrl,
-        onSelectProvider,
+        onScan,
+        onStop,
     } = options;
 
     const elements = {
@@ -276,6 +277,7 @@ function createUi(options) {
         historySection: document.getElementById('historySection'),
         installButton: document.getElementById('installBtn'),
         pasteButton: document.getElementById('pasteBtn'),
+        scanButton: document.getElementById('scanBtn'),
         progressFill: document.getElementById('progressFill'),
         progressInfo: document.getElementById('progressInfo'),
         progressLabel: document.getElementById('progressLabel'),
@@ -305,19 +307,10 @@ function createUi(options) {
     let progressAnimationFrame = null;
 
     elements.pasteButton.addEventListener('click', onPaste);
-    elements.downloadButton.addEventListener('click', onDownload);
+    elements.scanButton.addEventListener('click', onScan);
+    elements.downloadButton.onclick = onDownload;
     elements.clearHistoryButton.addEventListener('click', onClearHistory);
     elements.installButton.addEventListener('click', onOpenInstallGuide);
-
-    elements.providerTabs.forEach((tab) => {
-        tab.addEventListener('click', () => {
-            if (tab.disabled) {
-                return;
-            }
-
-            onSelectProvider(tab.dataset.providerId);
-        });
-    });
 
     function setStatus(message, type) {
         elements.statusBox.classList.add('visible');
@@ -469,13 +462,15 @@ function createUi(options) {
     }
 
     function setDownloadButtonLoading() {
-        elements.downloadButton.disabled = true;
+        elements.downloadButton.disabled = false;
         elements.downloadButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="animation:spin 1s linear infinite">
-                <path d="M8 2A6 6 0 1 0 14 8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="3" y="3" width="10" height="10" rx="2" fill="white"/>
             </svg>
-            ${DOWNLOAD_BUTTON_LOADING_LABEL}
+            ${DOWNLOAD_BUTTON_STOP_LABEL}
         `;
+        elements.downloadButton.onclick = onStop;
+        elements.downloadButton.classList.add('stop-mode');
     }
 
     function resetDownloadButton(isEnabled) {
@@ -487,6 +482,8 @@ function createUi(options) {
             </svg>
             ${DOWNLOAD_BUTTON_LABEL}
         `;
+        elements.downloadButton.onclick = onDownload;
+        elements.downloadButton.classList.remove('stop-mode');
     }
 
     function renderHistory(items) {

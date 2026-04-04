@@ -32,8 +32,7 @@ function run() {
     assert(youtubeArgs.includes('1'));
     assert(youtubeArgs.includes('--progress-template'));
     assert(youtubeArgs.includes('download:%(progress)j'));
-    assert(youtubeArgs.includes('--print'));
-    assert(youtubeArgs.includes('after_move:filepath'));
+    assert(!youtubeArgs.includes('--print'), 'Should not include --print (suppresses progress)');
     assert(youtubeArgs.includes('--merge-output-format'));
     assert(youtubeArgs.includes('mp4'));
     assert(youtubeArgs.includes('tmp/%(id)s.%(ext)s'));
@@ -70,7 +69,7 @@ function run() {
     assert(twitterArgs.includes('1'));
     assert(twitterArgs.includes('--progress-template'));
     assert(twitterArgs.includes('download:%(progress)j'));
-    assert(twitterArgs.includes('after_move:filepath'));
+    assert(!twitterArgs.includes('--print'), 'Should not include --print (suppresses progress)');
 
     // --- Instagram ---
     const instagramReelProvider = resolveProvider('https://www.instagram.com/reel/ABC123/');
@@ -142,10 +141,10 @@ function run() {
 
     assert(baseArgs.includes('--no-playlist'));
     assert(baseArgs.includes('--newline'));
+    assert(baseArgs.includes('--progress'));
     assert(baseArgs.includes('--progress-delta'));
     assert(baseArgs.includes('--no-part'));
-    assert(baseArgs.includes('--print'));
-    assert(baseArgs.includes('after_move:filepath'));
+    assert(!baseArgs.includes('--print'), 'buildBaseArgs should not include --print');
     assert.strictEqual(baseArgs[baseArgs.length - 1], 'https://example.com/video');
     assert.strictEqual(baseArgs[baseArgs.length - 2], '--');
 

@@ -130,12 +130,22 @@ function runDownload(options) {
         ytdlpPath,
     } = options;
 
-    return new Promise((resolve, reject) => {
+    let abortFn = null;
+
+    const promise = new Promise((resolve, reject) => {
         const stderrLines = [];
         const processHandle = spawn(ytdlpPath, args, {
             env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
             shell: false,
         });
+
+        abortFn = function () {
+            try {
+                processHandle.kill('SIGTERM');
+            } catch (_error) {
+                // Process may have already exited
+            }
+        };
 
         processHandle.stdout.setEncoding('utf8');
         processHandle.stderr.setEncoding('utf8');
@@ -170,6 +180,8 @@ function runDownload(options) {
             });
         });
     });
+
+    return { abort: abortFn, promise };
 }
 
 const STALE_SESSION_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours

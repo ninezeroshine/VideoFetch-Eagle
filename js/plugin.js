@@ -64,6 +64,7 @@ function loadAppModules() {
 
 let ui = null;
 let previousDefaultTags = '';
+let activeDownload = null;
 
 function updateProgressState(details) {
     ui.updateProgress(details);
@@ -151,7 +152,7 @@ async function runProviderDownload(options) {
         handleProgressLine(line);
     }
 
-    let result = await app.runDownload({
+    let download = app.runDownload({
         args: provider.buildDownloadArgs({
             downloadOptions,
             outputTemplate: session.outputTemplate,
@@ -166,6 +167,9 @@ async function runProviderDownload(options) {
         ytdlpPath,
     });
 
+    activeDownload = download;
+    let result = await download.promise;
+
     if (result.code !== 0 && typeof provider.shouldRetryWithClientFallback === 'function' && provider.shouldRetryWithClientFallback(result.stderrLines)) {
         updateProgressState({
             info: 'Switching to a token-safe YouTube client profile',
@@ -177,7 +181,7 @@ async function runProviderDownload(options) {
         });
         capturedFilePath = null;
 
-        result = await app.runDownload({
+        download = app.runDownload({
             args: provider.buildDownloadArgs({
                 downloadOptions,
                 outputTemplate: session.outputTemplate,
@@ -192,6 +196,9 @@ async function runProviderDownload(options) {
             },
             ytdlpPath,
         });
+
+        activeDownload = download;
+        result = await download.promise;
     }
 
     return {
@@ -314,24 +321,20 @@ async function startDownload() {
         return;
     }
 
-    const selectedProvider = app.getProviderById(state.selectedProviderId);
     const resolvedProvider = app.resolveProvider(url);
 
-    if (resolvedProvider && resolvedProvider.id !== selectedProvider.id) {
+    if (!resolvedProvider) {
+        ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
+        return;
+    }
+
+    const currentProvider = app.getProviderById(state.selectedProviderId);
+
+    if (!currentProvider || currentProvider.id !== resolvedProvider.id) {
         applyProvider(resolvedProvider);
     }
 
-    const provider = resolvedProvider || selectedProvider;
-
-    if (!provider) {
-        ui.setStatus('This URL is not supported yet.', 'error');
-        return;
-    }
-
-    if (!provider.matchesUrl(url)) {
-        ui.setStatus(`This URL does not match the selected platform: ${provider.label}.`, 'error');
-        return;
-    }
+    const provider = resolvedProvider;
 
     app.setIsDownloading(true);
     ui.clearStatus();
@@ -407,9 +410,23 @@ async function startDownload() {
         });
         addToHistory(url, false, error.message);
     } finally {
+        activeDownload = null;
         app.setIsDownloading(false);
         ui.resetDownloadButton(Boolean(app.getState().ytdlpPath));
     }
+}
+
+function stopDownload() {
+    if (!activeDownload) {
+        return;
+    }
+
+    activeDownload.abort();
+    activeDownload = null;
+    app.setIsDownloading(false);
+    ui.resetDownloadButton(Boolean(app.getState().ytdlpPath));
+    ui.showProgress(false);
+    ui.setStatus('Download cancelled.', 'error');
 }
 
 async function pasteFromClipboard() {
@@ -421,10 +438,14 @@ async function pasteFromClipboard() {
         }
 
         ui.setUrl(clipboardText);
+        ui.clearStatus();
+
         const resolvedProvider = app.resolveProvider(clipboardText);
 
         if (resolvedProvider) {
             applyProvider(resolvedProvider);
+        } else {
+            ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
         }
     } catch (error) {
         ui.setStatus('Cannot read clipboard: ' + error.message, 'error');
@@ -456,14 +477,23 @@ async function autoDetectClipboard() {
     }
 }
 
-function handleSelectProvider(providerId) {
-    const provider = app.getProviderById(providerId);
+function scanUrl() {
+    const url = ui.getUrl();
 
-    if (!provider) {
-        ui.setStatus('This platform is not available yet.', 'error');
+    if (!url) {
+        ui.setStatus('Paste a URL first, then scan.', 'error');
+        ui.focusUrlInput();
         return;
     }
 
+    const provider = app.resolveProvider(url);
+
+    if (!provider) {
+        ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
+        return;
+    }
+
+    ui.clearStatus();
     applyProvider(provider);
 }
 
@@ -500,18 +530,13 @@ async function initialize() {
         onOpenInstallGuide: openInstallGuide,
         onPaste: pasteFromClipboard,
         onReuseUrl: handleReuseUrl,
-        onSelectProvider: handleSelectProvider,
+        onScan: scanUrl,
+        onStop: stopDownload,
     });
 
     const history = app.loadHistory(localStorage);
     app.setHistory(history);
     ui.renderHistory(history);
-
-    const selectedProviderId = app.loadSelectedProvider(localStorage);
-    const constantsModule = requireFromPlugin('js/utils/constants.js');
-    const selectedProvider = app.getProviderById(selectedProviderId) || app.getProviderById(constantsModule.DEFAULT_PROVIDER_ID);
-    previousDefaultTags = selectedProvider.getDefaultTags().join(', ');
-    applyProvider(selectedProvider, true);
 
     await refreshYtdlpStatus();
     app.cleanupStaleSessions();

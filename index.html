@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/themes.css">
 </head>
-<body data-provider="twitter">
+<body>
 
 <!-- Header -->
 <div class="header">
@@ -33,18 +33,18 @@
     </div>
 </div>
 
-<!-- Platform selector -->
+<!-- Platform indicator (passive — activated by URL scan) -->
 <div class="platform-tabs">
     <div class="tab-indicator" id="tabIndicator"></div>
-    <button class="platform-tab active" id="tab-twitter" data-provider-id="twitter" type="button">
+    <div class="platform-tab" id="tab-twitter" data-provider-id="twitter">
         <div class="tab-icon x-icon">
             <svg width="10" height="10" viewBox="0 0 1200 1227" fill="none">
                 <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.163 519.284ZM569.165 687.828L521.697 619.384L144.011 79.6944H306.615L611.412 515.685L658.88 584.129L1055.08 1150.3H892.48L569.165 687.828Z" fill="white"/>
             </svg>
         </div>
         X / Twitter
-    </button>
-    <button class="platform-tab" id="tab-youtube" data-provider-id="youtube" type="button">
+    </div>
+    <div class="platform-tab" id="tab-youtube" data-provider-id="youtube">
         <div class="tab-icon yt-icon">
             <svg width="10" height="7" viewBox="0 0 10 7" fill="none">
                 <path d="M9.5 1.08C9.39 0.64 9.05 0.3 8.61 0.19C7.85 0 5 0 5 0C5 0 2.15 0 1.39 0.19C0.95 0.3 0.61 0.64 0.5 1.08C0.31 1.84 0.31 3.5 0.31 3.5C0.31 3.5 0.31 5.16 0.5 5.92C0.61 6.36 0.95 6.7 1.39 6.81C2.15 7 5 7 5 7C5 7 7.85 7 8.61 6.81C9.05 6.7 9.39 6.36 9.5 5.92C9.69 5.16 9.69 3.5 9.69 3.5C9.69 3.5 9.69 1.84 9.5 1.08Z" fill="white"/>
@@ -52,8 +52,8 @@
             </svg>
         </div>
         YouTube
-    </button>
-    <button class="platform-tab" id="tab-instagram" data-provider-id="instagram" type="button">
+    </div>
+    <div class="platform-tab" id="tab-instagram" data-provider-id="instagram">
         <div class="tab-icon ig-icon">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                 <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" stroke-width="2.2"/>
@@ -62,15 +62,15 @@
             </svg>
         </div>
         Instagram
-    </button>
-    <button class="platform-tab" id="tab-tiktok" data-provider-id="tiktok" type="button">
+    </div>
+    <div class="platform-tab" id="tab-tiktok" data-provider-id="tiktok">
         <div class="tab-icon tt-icon">
             <svg width="10" height="12" viewBox="0 0 20 24" fill="none">
                 <path d="M16 0C16 3.3 18.7 6 22 6V10C19.5 10 17.3 9 16 7.4V16C16 20.4 12.4 24 8 24C3.6 24 0 20.4 0 16C0 11.6 3.6 8 8 8V12C5.8 12 4 13.8 4 16C4 18.2 5.8 20 8 20C10.2 20 12 18.2 12 16V0H16Z" fill="white"/>
             </svg>
         </div>
         TikTok
-    </button>
+    </div>
 </div>
 
 <!-- Main content -->
@@ -98,18 +98,25 @@
 
     <!-- URL input -->
     <div class="input-group">
-        <div class="input-label" id="urlLabel">Tweet / Post URL</div>
+        <div class="input-label" id="urlLabel">Video URL</div>
         <div class="url-row">
             <input
                 type="text"
                 class="url-input"
                 id="urlInput"
-                placeholder="https://x.com/user/status/..."
+                placeholder="Paste a link from Twitter, YouTube, Instagram or TikTok..."
                 autocomplete="off"
                 spellcheck="false"
             />
             <button class="paste-btn" id="pasteBtn" title="Paste from clipboard" type="button">
                 Paste
+            </button>
+            <button class="scan-btn" id="scanBtn" title="Detect platform from URL" type="button">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+                Scan
             </button>
         </div>
     </div>
@@ -119,13 +126,6 @@
         <div class="options-title">Download Options</div>
 
         <div class="provider-options" id="providerOptions" aria-live="polite">
-            <div class="option-row">
-                <div class="option-info">
-                    <div class="option-name">Quality</div>
-                    <div class="option-desc">Best available with audio</div>
-                </div>
-                <div class="option-value">Best + Audio</div>
-            </div>
         </div>
 
         <div class="option-row option-row-tags">

@@ -39,38 +39,21 @@
     border-radius: calc(var(--radius-md) + 1px);
     border: 1px solid transparent;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     font-family: inherit;
     font-size: var(--text-base);
     font-weight: 500;
-    cursor: pointer;
-    transition: color var(--transition-normal), background var(--transition-normal), border-color var(--transition-normal);
+    transition: color var(--transition-theme), opacity var(--transition-theme);
     position: relative;
     z-index: 1;
     -webkit-user-select: none;
     user-select: none;
-}
-
-.platform-tab:hover:not(.active) {
-    background: var(--bg-hover);
-    color: var(--text-primary);
-    border-color: var(--border);
-}
-
-.platform-tab:active:not(:disabled) {
-    transform: scale(0.96);
-}
-
-.platform-tab:disabled,
-.platform-tab.disabled-tab {
-    cursor: not-allowed;
     opacity: 0.45;
 }
 
 .platform-tab.active {
     color: var(--text-primary);
-    border-color: transparent;
-    background: transparent;
+    opacity: 1;
 }
 
 .platform-tab .tab-icon {
@@ -155,6 +138,34 @@
     background: var(--bg-hover);
     color: var(--text-primary);
     border-color: var(--border-hover);
+}
+
+/* ─── Scan button ─── */
+.scan-btn {
+    padding: var(--space-10) var(--space-14);
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-lg);
+    color: #fff;
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--transition-theme), transform var(--transition-fast);
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+.scan-btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.scan-btn:active {
+    transform: scale(0.96);
 }
 
 /* ─── Options card ─── */
@@ -315,4 +326,13 @@
 .download-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.download-btn.stop-mode {
+    background: var(--error);
+}
+
+.download-btn.stop-mode:hover {
+    background: var(--error-dark);
+    box-shadow: var(--shadow-error-glow);
 }

@@ -1,13 +1,17 @@
 # Video Fetch — Eagle Plugin
 
-Download videos from Twitter/X and YouTube directly into your Eagle library with full metadata, tags, and folder awareness.
+Download videos from Twitter/X, YouTube, Instagram and TikTok directly into your Eagle library with full metadata, tags, and folder awareness.
 
 ## Features
 
-- **Twitter/X & YouTube** video download with provider-specific quality options
-- **Auto-import to Eagle** with tags, source URL, annotation, and selected folder support
-- **Clipboard auto-detect** — plugin detects supported URLs on open and on show
+- **4 platforms** — Twitter/X, YouTube, Instagram Reels/Posts/Stories, TikTok (watermark-free)
+- **Auto-detect** — paste a URL and the plugin recognizes the platform automatically
 - **Live progress** — real-time download bar with speed, ETA, and stage indicators
+- **Stop download** — cancel any active download instantly
+- **Per-provider themes** — UI accent color switches to match each platform
+- **Spring animations** — elastic tab indicator, staggered options, spring-pop button (Motion One)
+- **Auto-import to Eagle** — downloaded video gets tags, source URL, annotation, and target folder
+- **Clipboard auto-detect** — plugin detects supported URLs on open and on show
 - **Download history** — recent downloads with one-click re-use
 - **Native notifications** — system-level alerts on download success/failure
 - **Temp cleanup** — automatic cleanup of stale session files (24h threshold)
@@ -17,7 +21,7 @@ Download videos from Twitter/X and YouTube directly into your Eagle library with
 
 ### yt-dlp (required)
 
-This plugin uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) to download videos. The plugin auto-detects yt-dlp from PATH and common Python install locations.
+This plugin uses [yt-dlp](https://github.com/yt-dlp/yt-dlp) to download videos.
 
 **Windows:**
 ```
@@ -47,14 +51,30 @@ winget install ffmpeg
 brew install ffmpeg
 ```
 
+### deno (recommended for YouTube)
+
+yt-dlp 2026+ uses deno for YouTube JavaScript challenge solving.
+
+**Windows:**
+```
+winget install DenoLand.Deno
+```
+
+**macOS:**
+```
+brew install deno
+```
+
 ## Usage
 
 1. Open Eagle and click the plugin panel
 2. Click **Video Fetch**
-3. Paste a Twitter/X or YouTube URL (or let clipboard auto-detect fill it)
-4. Choose quality and format options
+3. Paste a video URL (or let clipboard auto-detect fill it)
+4. Click **Scan** — the plugin detects the platform and shows download options
 5. Hit **Download Video**
 6. Video is automatically added to your Eagle library
+
+To cancel a download in progress, click the **Stop** button.
 
 If a folder is selected in Eagle, the video will be imported into that folder.
 
@@ -68,43 +88,27 @@ If a folder is selected in Eagle, the video will be imported into that folder.
 | Runtime | Chromium 107 + Node 16 (Eagle embedded) |
 | Module system | CommonJS (`require`) |
 | UI | Vanilla HTML/CSS/JS (no frameworks) |
+| Animation | Motion One v10 (spring physics, stagger) |
 | External tool | yt-dlp (spawned via `child_process`) |
-
-### Eagle API Usage
-
-| API | Purpose |
-|-----|---------|
-| `eagle.onPluginCreate` | Initialize plugin, load modules |
-| `eagle.onPluginRun` | Auto-detect clipboard URL |
-| `eagle.onPluginShow` | Re-detect clipboard when window shown |
-| `eagle.onPluginBeforeExit` | Cleanup stale temp files |
-| `eagle.item.addFromPath` | Import downloaded video with metadata |
-| `eagle.item.open` | Navigate to imported item |
-| `eagle.folder.getSelected` | Import into currently selected folder |
-| `eagle.clipboard.readText` | Read URL from clipboard |
-| `eagle.notification.show` | Native OS notifications on completion |
-| `eagle.window.flashFrame` | Flash taskbar on background completion |
-| `eagle.shell.openExternal` | Open yt-dlp install guide |
-| `eagle.app.getPath('temp')` | Resolve temp directory for downloads |
-| `eagle.log.*` | Debug/info/warn/error logging |
 
 ### Architecture
 
 ```
 VideoFetch/
 ├── manifest.json              Plugin manifest (id, version, window config)
-├── index.html                 Entry point — clean HTML, no inline CSS
+├── index.html                 Entry point
 ├── logo.png                   Plugin icon (128x128)
-├── package.json               Dev-only: test scripts
+├── package.json               Dependencies + test scripts
 │
 ├── css/                       Modular design system
-│   ├── tokens.css             Design tokens (colors, spacing, radii, shadows)
+│   ├── tokens.css             Design tokens (colors, spacing, radii, shadows, accent alphas)
 │   ├── base.css               Reset, typography, scrollbar, keyframes
 │   ├── layout.css             Header, content area, footer
 │   ├── components.css         Tabs, inputs, buttons, cards, selects
 │   ├── progress.css           Progress bar, stages, success/failure states
 │   ├── status.css             Status messages, warning banner
-│   └── history.css            Download history list
+│   ├── history.css            Download history list
+│   └── themes.css             Per-provider color themes (Twitter/YouTube/Instagram/TikTok)
 │
 ├── js/
 │   ├── plugin.js              Entry point — orchestrator, lifecycle hooks
@@ -119,11 +123,15 @@ VideoFetch/
 │   │
 │   ├── providers/
 │   │   ├── index.js           Provider registry (list, getById, resolve)
-│   │   ├── twitter.js         Twitter/X: URL matching, yt-dlp args, options
-│   │   └── youtube.js         YouTube: quality/format selection, retry logic
+│   │   ├── common.js          Shared yt-dlp arguments for all providers
+│   │   ├── twitter.js         Twitter/X provider
+│   │   ├── youtube.js         YouTube provider (quality, format, retry)
+│   │   ├── instagram.js       Instagram provider (Reels, Posts, Stories)
+│   │   └── tiktok.js          TikTok provider (watermark-free)
 │   │
 │   ├── services/
-│   │   ├── ytdlp.js           yt-dlp detection, process spawning, temp mgmt
+│   │   ├── ytdlp.js           yt-dlp detection, process spawning, abort, temp mgmt
+│   │   ├── animate.js         Motion One wrapper (fadeIn, staggerIn, elasticSlide, springPop)
 │   │   ├── progressParser.js  Parse yt-dlp stdout (JSON + text formats)
 │   │   ├── fileDiscovery.js   Locate final file after download/merge
 │   │   └── clipboard.js       Browser + Eagle clipboard reading
@@ -131,6 +139,8 @@ VideoFetch/
 │   └── utils/
 │       ├── constants.js       Shared constants (keys, limits, extensions)
 │       └── html.js            XSS-safe HTML escaping
+│
+├── node_modules/              Motion One v10 + dependencies
 │
 └── scripts/                   Test suite (runs outside Eagle via Node)
     ├── run-tests.js
@@ -141,18 +151,16 @@ VideoFetch/
 
 ### Design System
 
-The CSS is split into 7 modular files loaded in dependency order. All visual constants live in `css/tokens.css` as CSS custom properties:
+The CSS is split into 8 modular files loaded in dependency order. All visual constants live in `css/tokens.css` as CSS custom properties:
 
 - **Surfaces**: `--bg-primary`, `--bg-card`, `--bg-input`, `--bg-hover`
-- **Text**: `--text-primary`, `--text-secondary`, `--text-muted`
-- **Accent**: `--accent`, `--accent-hover`, `--accent-dark`
-- **Semantic**: `--success`, `--error`, `--warning` (with dark variants)
-- **Spacing**: `--space-2` through `--space-20` (2px increments)
-- **Radii**: `--radius-xs` through `--radius-pill`
-- **Transitions**: `--transition-fast`, `--transition-normal`, `--transition-slow`
-- **Shadows**: `--shadow-accent-glow`, `--shadow-success-glow`, `--shadow-error-glow`
+- **Accent + alphas**: `--accent`, `--accent-hover`, `--accent-dark`, `--accent-a02` through `--accent-a45`
+- **Typography**: `--text-2xs` through `--text-2xl` (8-step scale)
+- **Spacing**: `--space-2` through `--space-20`
+- **Shadows**: `--shadow-accent-glow`, `--shadow-bar-glow`, `--shadow-accent-dot`
+- **Transitions**: `--transition-fast` through `--transition-theme`
 
-To re-theme the plugin, swap or override `tokens.css`. All other CSS files reference tokens only.
+Per-provider themes are defined in `css/themes.css` using `body[data-provider]` selectors. Each provider overrides the full accent token family. CSS transitions on accent-dependent elements handle smooth color changes automatically.
 
 ### Provider Interface
 
@@ -160,45 +168,47 @@ Each provider module exports:
 
 ```javascript
 module.exports = {
-    id: 'twitter',                   // Unique identifier
-    label: 'X / Twitter',            // Display name
-    isImplemented: true,             // Show in UI or mark "coming soon"
-    matchesUrl(url) {},              // URL pattern test
-    getDefaultTags() {},             // Default Eagle tags
-    getInputLabel() {},              // URL input label text
-    getInputPlaceholder() {},        // URL input placeholder
-    getDownloadOptions() {},         // Options schema for UI rendering
-    buildDownloadArgs(options) {},   // Build yt-dlp CLI arguments
+    id: 'twitter',
+    label: 'X / Twitter',
+    isImplemented: true,
+    matchesUrl(url) {},
+    getDefaultTags() {},
+    getInputLabel() {},
+    getInputPlaceholder() {},
+    getDownloadOptions() {},
+    buildDownloadArgs(options) {},
     // Optional:
-    shouldRetryWithClientFallback(stderrLines) {},  // YouTube-specific retry
+    shouldRetryWithClientFallback(stderrLines) {},
 };
 ```
 
-Adding a new platform requires creating one file in `js/providers/` and registering it in `js/providers/index.js`.
+Shared yt-dlp arguments (`--no-playlist`, `--newline`, `--progress`, etc.) live in `providers/common.js`. Adding a new platform requires creating one file in `js/providers/` and registering it in `js/providers/index.js`.
 
 ### Security
 
-- **No shell injection**: yt-dlp is spawned with `shell: false` and `--` separates options from URL arguments
+- **No shell injection**: yt-dlp is spawned with `shell: false` and `--` separates options from URL
 - **XSS protection**: All user-provided text is escaped via `escapeHtml()` before DOM insertion
-- **Immutable state**: `getState()` returns `Object.freeze()` copies preventing accidental mutation
+- **Immutable state**: `getState()` returns `Object.freeze()` copies
 - **No CORS issues**: Eagle plugins run without cross-origin restrictions
 
 ### Download Flow
 
 ```
-1. User pastes URL → resolveProvider(url) matches provider
-2. createDownloadSession() → temp dir + unique session ID
-3. spawn yt-dlp with provider.buildDownloadArgs()
-4. Parse stdout/stderr → update progress bar in real-time
-5. extractFilePathFromLine() captures final file path
-6. eagle.folder.getSelected() → get target folder (if any)
-7. eagle.item.addFromPath() → import to Eagle with tags + metadata
-8. cleanupSessionFile() → remove temp file
-9. eagle.notification.show() → native OS notification
-10. eagle.item.open() → navigate to imported item
+1. User pastes URL → clicks Scan (or Paste auto-scans)
+2. resolveProvider(url) matches provider → tab activates, theme switches
+3. User clicks Download Video
+4. createDownloadSession() → temp dir + unique session ID
+5. spawn yt-dlp with provider.buildDownloadArgs()
+6. Parse stdout JSON progress → update progress bar in real-time
+7. Parse stderr for [download] Destination / [Merger] lines → capture file path
+8. eagle.item.addFromPath() → import to Eagle with tags + metadata
+9. cleanupSessionFile() → remove temp file
+10. eagle.notification.show() → native OS notification
 ```
 
-YouTube downloads include automatic retry with alternative client profiles if the initial request is rejected (PO token / precondition failures).
+User can click **Stop** at any point during step 5-6 to kill the yt-dlp process.
+
+YouTube downloads include automatic retry with alternative client profiles if the initial request is rejected.
 
 ## Development
 
@@ -224,7 +234,8 @@ To debug inside Eagle: set `"devTools": true` in `manifest.json` and press F12.
 |---------|----------|
 | yt-dlp not found | Ensure `yt-dlp` is in system PATH or installed via pip/winget/brew |
 | No audio in output | Install ffmpeg for video+audio stream merging |
-| YouTube 403/400 errors | Update yt-dlp: `pip install -U yt-dlp` or `winget upgrade yt-dlp` |
+| YouTube 403/bot errors | Install deno (`winget install DenoLand.Deno`) and update yt-dlp |
+| Progress stuck on Preparing | Update yt-dlp: `pip install -U yt-dlp` |
 | Twitter login-wall | Some Twitter content requires authentication; yt-dlp cookies may help |
 | Video not in folder | Select a folder in Eagle before downloading |
 
