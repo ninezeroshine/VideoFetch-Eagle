@@ -1,6 +1,6 @@
 'use strict';
 
-const { FORMAT_OPTIONS, buildAudioArgs, buildBaseArgs, isAudioOnly } = require('./common');
+const { buildProviderArgs, buildSimpleOptions } = require('./common');
 const { parseBasicMetadata } = require('../services/metadata');
 
 function matchesUrl(url) {
@@ -30,45 +30,13 @@ function parseMetadata(raw) {
 /* ─── Download options ─── */
 
 function getDownloadOptions() {
-    return {
-        defaults: { format: 'mp4' },
-        schema: [
-            {
-                description: 'Best available quality',
-                key: 'quality',
-                label: 'Quality',
-                type: 'static',
-                value: 'Best',
-            },
-            {
-                description: 'Video with audio or audio only',
-                key: 'format',
-                label: 'Format',
-                options: FORMAT_OPTIONS,
-                type: 'chips',
-            },
-        ],
-    };
+    return buildSimpleOptions();
 }
 
+const VIDEO_FORMAT = 'bestvideo[protocol=https][ext=mp4]+bestaudio[protocol=https][ext=mp4]/best[protocol=https][ext=mp4]/bestvideo+bestaudio/best';
+
 function buildDownloadArgs(options) {
-    const { downloadOptions, outputTemplate, url } = options;
-
-    if (isAudioOnly(downloadOptions)) {
-        return [
-            '-f', 'bestaudio/best',
-            ...buildAudioArgs(),
-            ...buildBaseArgs(outputTemplate, url),
-        ];
-    }
-
-    return [
-        '-f',
-        'bestvideo[protocol=https][ext=mp4]+bestaudio[protocol=https][ext=mp4]/best[protocol=https][ext=mp4]/bestvideo+bestaudio/best',
-        '--merge-output-format',
-        'mp4',
-        ...buildBaseArgs(outputTemplate, url),
-    ];
+    return buildProviderArgs(VIDEO_FORMAT, options, []);
 }
 
 module.exports = {

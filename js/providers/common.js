@@ -53,9 +53,65 @@ function isAudioOnly(downloadOptions) {
     return downloadOptions && downloadOptions.format === 'mp3';
 }
 
+/**
+ * Standard download options schema for providers with single "Best" quality.
+ * Used by twitter, instagram, tiktok. YouTube overrides with dynamic qualities.
+ */
+function buildSimpleOptions(qualityDescription) {
+    return {
+        defaults: { format: 'mp4' },
+        schema: [
+            {
+                description: qualityDescription || 'Best available quality',
+                key: 'quality',
+                label: 'Quality',
+                type: 'static',
+                value: 'Best',
+            },
+            {
+                description: 'Video with audio or audio only',
+                key: 'format',
+                label: 'Format',
+                options: FORMAT_OPTIONS,
+                type: 'chips',
+            },
+        ],
+    };
+}
+
+/**
+ * Build download args with audio-only support.
+ * Shared by providers that don't need custom format selection logic (twitter, instagram, tiktok).
+ *
+ * @param {string} videoFormatSelector  — yt-dlp format string for video mode
+ * @param {object} options              — { downloadOptions, outputTemplate, url }
+ * @param {string[]} extraArgs          — provider-specific args (e.g. ['--no-mtime'])
+ */
+function buildProviderArgs(videoFormatSelector, options, extraArgs) {
+    const { downloadOptions, outputTemplate, url } = options;
+
+    if (isAudioOnly(downloadOptions)) {
+        return [
+            '-f', 'bestaudio/best',
+            ...buildAudioArgs(),
+            ...extraArgs,
+            ...buildBaseArgs(outputTemplate, url),
+        ];
+    }
+
+    return [
+        '-f', videoFormatSelector,
+        '--merge-output-format', 'mp4',
+        ...extraArgs,
+        ...buildBaseArgs(outputTemplate, url),
+    ];
+}
+
 module.exports = {
     FORMAT_OPTIONS,
     buildAudioArgs,
     buildBaseArgs,
+    buildProviderArgs,
+    buildSimpleOptions,
     isAudioOnly,
 };

@@ -1,6 +1,6 @@
 'use strict';
 
-const { FORMAT_OPTIONS, buildAudioArgs, buildBaseArgs, isAudioOnly } = require('./common');
+const { buildProviderArgs, buildSimpleOptions } = require('./common');
 const { parseBasicMetadata } = require('../services/metadata');
 
 function matchesUrl(url) {
@@ -30,47 +30,13 @@ function parseMetadata(raw) {
 /* ─── Download options ─── */
 
 function getDownloadOptions() {
-    return {
-        defaults: { format: 'mp4' },
-        schema: [
-            {
-                description: 'Best quality without watermark',
-                key: 'quality',
-                label: 'Quality',
-                type: 'static',
-                value: 'Best',
-            },
-            {
-                description: 'Video with audio or audio only',
-                key: 'format',
-                label: 'Format',
-                options: FORMAT_OPTIONS,
-                type: 'chips',
-            },
-        ],
-    };
+    return buildSimpleOptions('Best quality without watermark');
 }
 
+const VIDEO_FORMAT = 'bestvideo[format_note!*=watermark]+bestaudio/bestvideo+bestaudio/best';
+
 function buildDownloadArgs(options) {
-    const { downloadOptions, outputTemplate, url } = options;
-
-    if (isAudioOnly(downloadOptions)) {
-        return [
-            '-f', 'bestaudio/best',
-            ...buildAudioArgs(),
-            '--no-mtime',
-            ...buildBaseArgs(outputTemplate, url),
-        ];
-    }
-
-    return [
-        '-f',
-        'bestvideo[format_note!*=watermark]+bestaudio/bestvideo+bestaudio/best',
-        '--merge-output-format',
-        'mp4',
-        '--no-mtime',
-        ...buildBaseArgs(outputTemplate, url),
-    ];
+    return buildProviderArgs(VIDEO_FORMAT, options, ['--no-mtime']);
 }
 
 module.exports = {

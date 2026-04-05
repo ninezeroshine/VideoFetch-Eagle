@@ -260,14 +260,6 @@
     overflow: hidden;
 }
 
-.preview-channel {
-    font-size: var(--text-sm);
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 .preview-meta {
     display: flex;
     align-items: center;

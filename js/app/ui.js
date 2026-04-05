@@ -1,7 +1,7 @@
 'use strict';
 
 const { DOWNLOAD_BUTTON_LABEL, DOWNLOAD_BUTTON_LOADING_LABEL, DOWNLOAD_BUTTON_STOP_LABEL } = require('../utils/constants');
-const { escapeHtml } = require('../utils/html');
+const { escapeHtml, swapTagMediaType } = require('../utils/html');
 
 const PROGRESS_STAGE_SEQUENCE = ['preparing', 'downloading', 'merging', 'importing', 'success', 'failure'];
 const PROGRESS_STAGE_BADGE_LABELS = {
@@ -598,10 +598,7 @@ function createUi(options) {
                         providerOptionStateByProviderId[provider.id] = Object.assign({}, currentProviderOptionValues);
 
                         if (optionKey === 'format') {
-                            const tags = elements.tagsInput.value;
-                            elements.tagsInput.value = choice.value === 'mp3'
-                                ? tags.replace(/\bvideo\b/g, 'audio')
-                                : tags.replace(/\baudio\b/g, 'video');
+                            elements.tagsInput.value = swapTagMediaType(elements.tagsInput.value, choice.value);
                         }
                     });
 
