@@ -3,8 +3,8 @@
 const { DEFAULT_PROVIDER_ID } = require('../utils/constants');
 
 const state = {
+    activeTab: 'single',
     downloadHistory: [],
-    isDownloading: false,
     selectedProviderId: DEFAULT_PROVIDER_ID,
     ytdlpPath: null,
 };
@@ -13,14 +13,14 @@ function getState() {
     return Object.freeze(Object.assign({}, state));
 }
 
+function setActiveTab(tab) {
+    state.activeTab = tab === 'batch' ? 'batch' : 'single';
+    return state.activeTab;
+}
+
 function setHistory(history) {
     state.downloadHistory = Array.isArray(history) ? history.slice() : [];
     return state.downloadHistory;
-}
-
-function setIsDownloading(value) {
-    state.isDownloading = Boolean(value);
-    return state.isDownloading;
 }
 
 function setSelectedProviderId(providerId) {
@@ -35,8 +35,8 @@ function setYtdlpPath(executablePath) {
 
 module.exports = {
     getState,
+    setActiveTab,
     setHistory,
-    setIsDownloading,
     setSelectedProviderId,
     setYtdlpPath,
 };

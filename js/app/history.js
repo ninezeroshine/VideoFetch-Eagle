@@ -57,6 +57,5 @@ module.exports = {
     clearHistory,
     loadHistory,
     loadSelectedProvider,
-    saveHistory,
     saveSelectedProvider,
 };

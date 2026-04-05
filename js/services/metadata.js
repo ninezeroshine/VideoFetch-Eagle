@@ -1,6 +1,19 @@
 'use strict';
 
 const { exec } = require('child_process');
+const os = require('os');
+const path = require('path');
+
+function getEnhancedPath() {
+    const sep = process.platform === 'win32' ? ';' : ':';
+    const home = os.homedir();
+    const extra = [
+        path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Links'),
+        path.join(home, '.deno', 'bin'),
+    ];
+
+    return (process.env.PATH || '') + sep + extra.join(sep);
+}
 
 /**
  * Fetch video metadata via yt-dlp --dump-json.
@@ -9,9 +22,9 @@ const { exec } = require('child_process');
  */
 function fetchRawMetadata(ytdlpPath, url) {
     return new Promise((resolve) => {
-        const cmd = '"' + ytdlpPath + '" --dump-json --no-download --no-playlist -- "' + url + '"';
+        const cmd = '"' + ytdlpPath + '" --remote-components ejs:github --dump-json --no-download --no-playlist -- "' + url + '"';
 
-        exec(cmd, { shell: true, timeout: 20000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout) => {
+        exec(cmd, { shell: true, timeout: 30000, maxBuffer: 5 * 1024 * 1024, env: Object.assign({}, process.env, { PATH: getEnhancedPath() }) }, (error, stdout) => {
             if (error || !stdout) {
                 resolve(null);
                 return;

@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/progress.css">
     <link rel="stylesheet" href="css/status.css">
     <link rel="stylesheet" href="css/history.css">
     <link rel="stylesheet" href="css/themes.css">
@@ -129,28 +128,51 @@
         </div>
     </div>
 
-    <!-- URL input -->
-    <div class="input-group">
-        <div class="input-label" id="urlLabel">Video URL</div>
-        <div class="url-row">
-            <input
-                type="text"
-                class="url-input"
-                id="urlInput"
-                placeholder="Paste a link from Twitter, YouTube, Instagram or TikTok..."
-                autocomplete="off"
+    <!-- Mode tabs -->
+    <div class="mode-tabs">
+        <button class="mode-tab active" id="modeSingle" data-mode="single" type="button">Single</button>
+        <button class="mode-tab" id="modeBatch" data-mode="batch" type="button">Batch</button>
+    </div>
+
+    <!-- Single mode: URL input -->
+    <div class="single-mode" id="singleMode">
+        <div class="input-group">
+            <div class="input-label" id="urlLabel">Video URL</div>
+            <div class="url-row">
+                <input
+                    type="text"
+                    class="url-input"
+                    id="urlInput"
+                    placeholder="Paste a link from Twitter, YouTube, Instagram or TikTok..."
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+                <button class="paste-btn" id="pasteBtn" title="Paste from clipboard" type="button">
+                    Paste
+                </button>
+                <button class="scan-btn" id="scanBtn" title="Detect platform from URL" type="button">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    Scan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch mode: multiple URLs -->
+    <div class="batch-mode" id="batchMode" style="display:none">
+        <div class="input-group">
+            <div class="input-label">Paste multiple URLs (one per line)</div>
+            <textarea
+                class="batch-input"
+                id="batchInput"
+                placeholder="https://www.youtube.com/watch?v=...&#10;https://www.instagram.com/reel/...&#10;https://www.tiktok.com/@user/video/..."
+                rows="5"
                 spellcheck="false"
-            />
-            <button class="paste-btn" id="pasteBtn" title="Paste from clipboard" type="button">
-                Paste
-            </button>
-            <button class="scan-btn" id="scanBtn" title="Detect platform from URL" type="button">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                    <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.8"/>
-                    <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-                Scan
-            </button>
+            ></textarea>
+            <div class="batch-summary" id="batchSummary"></div>
         </div>
     </div>
 
@@ -189,52 +211,6 @@
         Download Video
     </button>
 
-    <!-- Progress -->
-    <div class="progress-section" id="progressSection" data-progress-state="preparing">
-        <div class="progress-card">
-            <div class="progress-overline">
-                <span class="progress-kicker">Download status</span>
-                <span class="progress-stage-badge" id="progressStageBadge">Preparing</span>
-            </div>
-            <div class="progress-header">
-                <div class="progress-copy">
-                    <span class="progress-label" id="progressLabel">Preparing download...</span>
-                    <div class="progress-info-text" id="progressInfo"></div>
-                </div>
-                <span class="progress-pct" id="progressPct">0%</span>
-            </div>
-            <div class="progress-bar-track">
-                <div class="progress-bar-fill" id="progressFill"></div>
-            </div>
-            <div class="progress-stage-rail" id="progressStageRail" aria-label="Download stages">
-                <div class="progress-stage-step is-active" data-stage-step="preparing">
-                    <span class="progress-stage-dot"></span>
-                    <span class="progress-stage-text">Preparing</span>
-                </div>
-                <div class="progress-stage-step" data-stage-step="downloading">
-                    <span class="progress-stage-dot"></span>
-                    <span class="progress-stage-text">Downloading</span>
-                </div>
-                <div class="progress-stage-step" data-stage-step="merging">
-                    <span class="progress-stage-dot"></span>
-                    <span class="progress-stage-text">Merging</span>
-                </div>
-                <div class="progress-stage-step" data-stage-step="importing">
-                    <span class="progress-stage-dot"></span>
-                    <span class="progress-stage-text">Importing</span>
-                </div>
-                <div class="progress-stage-step" data-stage-step="success">
-                    <span class="progress-stage-dot"></span>
-                    <span class="progress-stage-text">Done</span>
-                </div>
-                <div class="progress-stage-step" data-stage-step="failure">
-                    <span class="progress-stage-dot"></span>
-                    <span class="progress-stage-text">Error</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Status -->
     <div class="status-box" id="statusBox">
         <div class="status-row">
@@ -242,6 +218,9 @@
             <div class="status-message" id="statusMessage"></div>
         </div>
     </div>
+
+    <!-- Active downloads list -->
+    <div class="download-list" id="downloadList"></div>
 
     <!-- History -->
     <div class="history-section" id="historySection" style="display:none">

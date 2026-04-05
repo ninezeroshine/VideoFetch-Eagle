@@ -1,184 +1,7 @@
 'use strict';
 
-const { DOWNLOAD_BUTTON_LABEL, DOWNLOAD_BUTTON_LOADING_LABEL, DOWNLOAD_BUTTON_STOP_LABEL } = require('../utils/constants');
+const { DOWNLOAD_BUTTON_LABEL } = require('../utils/constants');
 const { escapeHtml, swapTagMediaType } = require('../utils/html');
-
-const PROGRESS_STAGE_SEQUENCE = ['preparing', 'downloading', 'merging', 'importing', 'success', 'failure'];
-const PROGRESS_STAGE_BADGE_LABELS = {
-    downloading: 'Downloading',
-    failure: 'Error',
-    importing: 'Importing',
-    merging: 'Merging',
-    preparing: 'Preparing',
-    success: 'Done',
-};
-const PROGRESS_STAGE_TITLE_LABELS = {
-    downloading: 'Downloading media...',
-    failure: 'Download failed',
-    importing: 'Importing into Eagle...',
-    merging: 'Merging media...',
-    preparing: 'Preparing download...',
-    success: 'Ready in Eagle',
-};
-const PROGRESS_STAGE_PERCENT_RANGES = {
-    downloading: { end: 84, start: 18 },
-    failure: { end: 100, start: 0 },
-    importing: { end: 99, start: 94 },
-    merging: { end: 94, start: 84 },
-    preparing: { end: 18, start: 4 },
-    success: { end: 100, start: 100 },
-};
-const PROGRESS_STAGE_ALIASES = {
-    complete: 'success',
-    completed: 'success',
-    download: 'downloading',
-    done: 'success',
-    downloading: 'downloading',
-    error: 'failure',
-    failed: 'failure',
-    failure: 'failure',
-    import: 'importing',
-    importing: 'importing',
-    loading: 'preparing',
-    merge: 'merging',
-    merging: 'merging',
-    'post processing': 'merging',
-    'post-processing': 'merging',
-    postprocessing: 'merging',
-    prepare: 'preparing',
-    preparing: 'preparing',
-    processing: 'merging',
-    queued: 'preparing',
-    ready: 'success',
-    retry: 'downloading',
-    retrying: 'downloading',
-    starting: 'preparing',
-    success: 'success',
-};
-
-function titleCaseWords(value) {
-    return value.replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function normalizeProgressStageValue(value) {
-    if (typeof value !== 'string') {
-        return null;
-    }
-
-    const normalizedValue = value.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
-
-    if (!normalizedValue) {
-        return null;
-    }
-
-    if (PROGRESS_STAGE_ALIASES[normalizedValue]) {
-        return PROGRESS_STAGE_ALIASES[normalizedValue];
-    }
-
-    if (normalizedValue.includes('fail') || normalizedValue.includes('error')) {
-        return 'failure';
-    }
-
-    if (normalizedValue.includes('success') || normalizedValue.includes('done') || normalizedValue.includes('complete') || normalizedValue.includes('finish')) {
-        return 'success';
-    }
-
-    if (normalizedValue.includes('import')) {
-        return 'importing';
-    }
-
-    if (normalizedValue.includes('merge') || normalizedValue.includes('mux') || normalizedValue.includes('post process')) {
-        return 'merging';
-    }
-
-    if (normalizedValue.includes('retry') || normalizedValue.includes('download')) {
-        return 'downloading';
-    }
-
-    if (normalizedValue.includes('prepar') || normalizedValue.includes('queue') || normalizedValue.includes('start')) {
-        return 'preparing';
-    }
-
-    return null;
-}
-
-function formatProgressStageBadge(stage, rawValue) {
-    if (typeof rawValue === 'string') {
-        const normalizedValue = rawValue.trim().toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
-
-        if (normalizedValue === 'retrying' || normalizedValue === 'queued' || normalizedValue === 'starting') {
-            return titleCaseWords(normalizedValue);
-        }
-    }
-
-    return PROGRESS_STAGE_BADGE_LABELS[stage] || PROGRESS_STAGE_BADGE_LABELS.preparing;
-}
-
-function resolveProgressStage(details) {
-    if (!details || typeof details !== 'object') {
-        return null;
-    }
-
-    const explicitStageFields = [details.stage, details.phase, details.state, details.status];
-
-    for (const fieldValue of explicitStageFields) {
-        const normalizedStage = normalizeProgressStageValue(fieldValue);
-
-        if (normalizedStage) {
-            return {
-                badgeLabel: formatProgressStageBadge(normalizedStage, fieldValue),
-                stage: normalizedStage,
-            };
-        }
-    }
-
-    const inferredStageFields = [details.label, details.info];
-
-    for (const fieldValue of inferredStageFields) {
-        const normalizedStage = normalizeProgressStageValue(fieldValue);
-
-        if (normalizedStage) {
-            return {
-                badgeLabel: PROGRESS_STAGE_BADGE_LABELS[normalizedStage] || PROGRESS_STAGE_BADGE_LABELS.preparing,
-                stage: normalizedStage,
-            };
-        }
-    }
-
-    return null;
-}
-
-function getProgressLabelFallback(stage, badgeLabel) {
-    if (stage === 'downloading' && badgeLabel === 'Retrying') {
-        return 'Retrying download...';
-    }
-
-    return PROGRESS_STAGE_TITLE_LABELS[stage] || PROGRESS_STAGE_TITLE_LABELS.preparing;
-}
-
-function clampProgressValue(value) {
-    if (typeof value !== 'number' || Number.isNaN(value)) {
-        return 0;
-    }
-
-    return Math.max(0, Math.min(100, value));
-}
-
-function mapProgressToStageRange(stage, pct, fallbackPct) {
-    const resolvedPct = typeof pct === 'number' ? clampProgressValue(pct) : null;
-
-    if (typeof resolvedPct === 'number') {
-        return resolvedPct;
-    }
-
-    if (stage === 'failure') {
-        return typeof resolvedPct === 'number' ? resolvedPct : clampProgressValue(fallbackPct);
-    }
-
-    const stageRange = PROGRESS_STAGE_PERCENT_RANGES[stage] || PROGRESS_STAGE_PERCENT_RANGES.preparing;
-
-    return stageRange.start;
-}
 
 function getOptionKey(optionDefinition, index) {
     return optionDefinition.key || optionDefinition.id || optionDefinition.name || `option-${index}`;
@@ -269,31 +92,31 @@ function createUi(options) {
         onAutoInstallYtdlp,
         onClearHistory,
         onDownload,
+        onModeSwitch,
         onOpenInstallGuide,
         onPaste,
         onReuseUrl,
         onScan,
-        onStop,
+        onStopDownload,
     } = options;
 
     const elements = {
         autoInstallFfmpegButton: document.getElementById('autoInstallFfmpegBtn'),
         autoInstallYtdlpButton: document.getElementById('autoInstallYtdlpBtn'),
+        batchInput: document.getElementById('batchInput'),
+        batchMode: document.getElementById('batchMode'),
+        batchSummary: document.getElementById('batchSummary'),
         clearHistoryButton: document.getElementById('historyClearBtn'),
         downloadButton: document.getElementById('downloadBtn'),
+        downloadList: document.getElementById('downloadList'),
         historyList: document.getElementById('historyList'),
         historySection: document.getElementById('historySection'),
         installButton: document.getElementById('installBtn'),
+        modeTabs: Array.from(document.querySelectorAll('.mode-tab')),
         pasteButton: document.getElementById('pasteBtn'),
         previewCard: document.getElementById('previewCard'),
         scanButton: document.getElementById('scanBtn'),
-        progressFill: document.getElementById('progressFill'),
-        progressInfo: document.getElementById('progressInfo'),
-        progressLabel: document.getElementById('progressLabel'),
-        progressPct: document.getElementById('progressPct'),
-        progressSection: document.getElementById('progressSection'),
-        progressStageBadge: document.getElementById('progressStageBadge'),
-        progressStageSteps: Array.from(document.querySelectorAll('[data-stage-step]')),
+        singleMode: document.getElementById('singleMode'),
         providerOptions: document.getElementById('providerOptions'),
         providerTabs: Array.from(document.querySelectorAll('.platform-tab[data-provider-id]')),
         statusBox: document.getElementById('statusBox'),
@@ -312,9 +135,6 @@ function createUi(options) {
     let currentProviderId = null;
     let currentProviderOptionSchema = [];
     let currentProviderOptionValues = {};
-    let displayedProgressPct = 0;
-    let lastActiveProgressStageIndex = 0;
-    let progressAnimationFrame = null;
 
     elements.pasteButton.addEventListener('click', onPaste);
     elements.scanButton.addEventListener('click', onScan);
@@ -323,6 +143,16 @@ function createUi(options) {
     elements.installButton.addEventListener('click', onOpenInstallGuide);
     elements.autoInstallYtdlpButton.addEventListener('click', onAutoInstallYtdlp);
     elements.autoInstallFfmpegButton.addEventListener('click', onAutoInstallFfmpeg);
+
+    elements.modeTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            onModeSwitch(tab.dataset.mode);
+        });
+    });
+
+    elements.batchInput.addEventListener('input', function () {
+        updateBatchSummary();
+    });
 
     function setStatus(message, type) {
         elements.statusBox.classList.add('visible');
@@ -335,137 +165,6 @@ function createUi(options) {
         elements.statusBox.classList.remove('visible');
     }
 
-    function showProgress(visible) {
-        elements.progressSection.classList.toggle('visible', Boolean(visible));
-    }
-
-    function resetProgress() {
-        if (progressAnimationFrame) {
-            cancelAnimationFrame(progressAnimationFrame);
-            progressAnimationFrame = null;
-        }
-
-        lastActiveProgressStageIndex = 0;
-        setRenderedProgress(0);
-        updateProgressStage({
-            badgeLabel: PROGRESS_STAGE_BADGE_LABELS.preparing,
-            stage: 'preparing',
-        });
-        elements.progressLabel.textContent = PROGRESS_STAGE_TITLE_LABELS.preparing;
-        elements.progressInfo.textContent = '';
-    }
-
-    function setRenderedProgress(pct) {
-        const clampedPct = clampProgressValue(pct);
-
-        displayedProgressPct = clampedPct;
-        elements.progressFill.style.width = `${clampedPct}%`;
-        elements.progressPct.textContent = `${Math.round(clampedPct)}%`;
-    }
-
-    function animateProgressTo(targetPct) {
-        const nextTarget = clampProgressValue(targetPct);
-
-        if (progressAnimationFrame) {
-            cancelAnimationFrame(progressAnimationFrame);
-            progressAnimationFrame = null;
-        }
-
-        if (typeof requestAnimationFrame !== 'function' || Math.abs(nextTarget - displayedProgressPct) < 0.5) {
-            setRenderedProgress(nextTarget);
-            return;
-        }
-
-        const direction = nextTarget >= displayedProgressPct ? 1 : -1;
-        const stepSize = Math.max(0.8, Math.abs(nextTarget - displayedProgressPct) / 8);
-
-        function tick() {
-            const remainingDistance = Math.abs(nextTarget - displayedProgressPct);
-
-            if (remainingDistance <= 0.5) {
-                setRenderedProgress(nextTarget);
-                progressAnimationFrame = null;
-                return;
-            }
-
-            setRenderedProgress(displayedProgressPct + (stepSize * direction));
-            progressAnimationFrame = requestAnimationFrame(tick);
-        }
-
-        progressAnimationFrame = requestAnimationFrame(tick);
-    }
-
-    function updateProgressStage(stageDetails) {
-        const nextStage = stageDetails && stageDetails.stage ? stageDetails.stage : 'preparing';
-        const nextStageIndex = PROGRESS_STAGE_SEQUENCE.indexOf(nextStage);
-        const successStageIndex = PROGRESS_STAGE_SEQUENCE.indexOf('success');
-
-        if (nextStageIndex === -1) {
-            return;
-        }
-
-        if (nextStage !== 'success' && nextStage !== 'failure') {
-            lastActiveProgressStageIndex = nextStageIndex;
-        }
-
-        elements.progressSection.dataset.progressState = nextStage;
-        elements.progressStageBadge.textContent = stageDetails && stageDetails.badgeLabel
-            ? stageDetails.badgeLabel
-            : (PROGRESS_STAGE_BADGE_LABELS[nextStage] || PROGRESS_STAGE_BADGE_LABELS.preparing);
-
-        elements.progressStageSteps.forEach((step) => {
-            const stepStage = step.dataset.stageStep;
-            const stepIndex = PROGRESS_STAGE_SEQUENCE.indexOf(stepStage);
-            let isComplete = false;
-
-            if (nextStage === 'success') {
-                isComplete = stepIndex > -1 && stepIndex < successStageIndex;
-            } else if (nextStage === 'failure') {
-                isComplete = stepIndex > -1 && stepIndex < lastActiveProgressStageIndex;
-            } else {
-                isComplete = stepIndex > -1 && stepIndex < nextStageIndex;
-            }
-
-            if (stepStage === 'failure' || stepStage === 'success') {
-                isComplete = nextStage === 'success' && stepStage !== 'success'
-                    ? isComplete
-                    : false;
-            }
-
-            step.classList.toggle('is-active', stepStage === nextStage);
-            step.classList.toggle('is-complete', isComplete);
-        });
-    }
-
-    function updateProgress(details) {
-        const safeDetails = details || {};
-        const stageDetails = resolveProgressStage(safeDetails);
-
-        if (stageDetails || typeof safeDetails.pct === 'number') {
-            const progressTarget = mapProgressToStageRange(
-                stageDetails ? stageDetails.stage : 'preparing',
-                safeDetails.pct,
-                displayedProgressPct
-            );
-
-            animateProgressTo(progressTarget);
-        }
-
-        if (stageDetails) {
-            updateProgressStage(stageDetails);
-        }
-
-        if (typeof safeDetails.label === 'string' && safeDetails.label.trim()) {
-            elements.progressLabel.textContent = safeDetails.label;
-        } else if (stageDetails) {
-            elements.progressLabel.textContent = getProgressLabelFallback(stageDetails.stage, stageDetails.badgeLabel);
-        }
-
-        if (typeof safeDetails.info === 'string') {
-            elements.progressInfo.textContent = safeDetails.info;
-        }
-    }
-
     function updateYtdlpStatus(isReady) {
         elements.ytdlpIndicator.className = `ytdlp-indicator ${isReady ? 'ok' : 'missing'}`;
         elements.ytdlpText.textContent = isReady ? 'yt-dlp ready' : 'yt-dlp missing';
@@ -475,31 +174,6 @@ function createUi(options) {
 
     function updateFfmpegStatus(isReady) {
         elements.ffmpegBanner.classList.toggle('visible', !isReady);
-    }
-
-    function setDownloadButtonLoading() {
-        elements.downloadButton.disabled = false;
-        elements.downloadButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <rect x="3" y="3" width="10" height="10" rx="2" fill="white"/>
-            </svg>
-            ${DOWNLOAD_BUTTON_STOP_LABEL}
-        `;
-        elements.downloadButton.onclick = onStop;
-        elements.downloadButton.classList.add('stop-mode');
-    }
-
-    function resetDownloadButton(isEnabled) {
-        elements.downloadButton.disabled = !isEnabled;
-        elements.downloadButton.innerHTML = `
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2 13H14" stroke="white" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            ${DOWNLOAD_BUTTON_LABEL}
-        `;
-        elements.downloadButton.onclick = onDownload;
-        elements.downloadButton.classList.remove('stop-mode');
     }
 
     function renderHistory(items) {
@@ -887,32 +561,133 @@ function createUi(options) {
         elements.scanButton.disabled = isLoading;
     }
 
-    updateProgressStage({
-        badgeLabel: PROGRESS_STAGE_BADGE_LABELS.preparing,
-        stage: 'preparing',
-    });
+    /* ─── Mode switching (Single / Batch) ─── */
+
+    function setMode(mode) {
+        elements.modeTabs.forEach(function (tab) {
+            tab.classList.toggle('active', tab.dataset.mode === mode);
+        });
+
+        elements.singleMode.style.display = mode === 'single' ? '' : 'none';
+        elements.batchMode.style.display = mode === 'batch' ? '' : 'none';
+
+        if (mode === 'batch') {
+            elements.downloadButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">'
+                + '<path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+                + '<path d="M2 13H14" stroke="white" stroke-width="2" stroke-linecap="round"/>'
+                + '</svg> Download All';
+        } else {
+            elements.downloadButton.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none">'
+                + '<path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+                + '<path d="M2 13H14" stroke="white" stroke-width="2" stroke-linecap="round"/>'
+                + '</svg> ' + DOWNLOAD_BUTTON_LABEL;
+        }
+    }
+
+    function getBatchInput() {
+        return elements.batchInput.value;
+    }
+
+    function updateBatchSummary() {
+        const text = elements.batchInput.value.trim();
+
+        if (!text) {
+            elements.batchSummary.innerHTML = '';
+            return;
+        }
+
+        const lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+        const supported = lines.filter(function (l) {
+            return /twitter\.com|x\.com|youtube\.com|youtu\.be|instagram\.com|tiktok\.com/i.test(l);
+        });
+
+        elements.batchSummary.innerHTML = '<span class="batch-count">' + supported.length + '</span> supported link'
+            + (supported.length !== 1 ? 's' : '') + ' detected out of ' + lines.length;
+    }
+
+    /* ─── Download cards ─── */
+
+    function updateDownloadCard(id, item) {
+        let card = elements.downloadList.querySelector('[data-download-id="' + id + '"]');
+
+        if (!card) {
+            card = document.createElement('div');
+            card.className = 'download-card';
+            card.dataset.downloadId = id;
+            card.innerHTML = '<div class="download-card-header">'
+                + '<span class="download-card-title"></span>'
+                + '<span class="download-card-badge"></span>'
+                + '<button class="download-card-stop" type="button">&times;</button>'
+                + '</div>'
+                + '<div class="download-card-bar"><div class="download-card-fill"></div></div>'
+                + '<div class="download-card-info"></div>';
+
+            card.querySelector('.download-card-stop').addEventListener('click', function () {
+                onStopDownload(id);
+            });
+
+            elements.downloadList.prepend(card);
+        }
+
+        const title = card.querySelector('.download-card-title');
+        const badge = card.querySelector('.download-card-badge');
+        const info = card.querySelector('.download-card-info');
+        const stopBtn = card.querySelector('.download-card-stop');
+
+        title.textContent = item.title || item.url;
+        badge.textContent = item.state;
+        badge.className = 'download-card-badge ' + item.state;
+        card.className = 'download-card ' + item.state;
+
+        if (item.state === 'error') {
+            info.textContent = item.error || '';
+        }
+
+        const isActive = item.state === 'queued' || item.state === 'scanning' || item.state === 'downloading' || item.state === 'merging';
+        stopBtn.style.display = isActive ? '' : 'none';
+    }
+
+    function updateDownloadCardProgress(id, progress) {
+        const card = elements.downloadList.querySelector('[data-download-id="' + id + '"]');
+
+        if (!card) {
+            return;
+        }
+
+        const fill = card.querySelector('.download-card-fill');
+        const info = card.querySelector('.download-card-info');
+
+        fill.style.width = Math.round(progress.pct || 0) + '%';
+        info.textContent = progress.info || '';
+    }
+
+    function updateDownloadButton(_hasActive, totalCount) {
+        if (totalCount === 0) {
+            elements.downloadButton.disabled = false;
+        }
+    }
 
     return {
         animateProviderSwitch,
         clearStatus,
         focusUrlInput,
+        getBatchInput,
         getProviderOptions,
         getTags,
         getUrl,
         hidePreview,
         renderHistory,
-        resetProgress,
-        resetDownloadButton,
-        setDownloadButtonLoading,
+        setMode,
         setProviderForm,
         setScanLoading,
         setSelectedProvider,
         setStatus,
         setUrl,
         showPreview,
-        showProgress,
+        updateDownloadButton,
+        updateDownloadCard,
+        updateDownloadCardProgress,
         updateFfmpegStatus,
-        updateProgress,
         updateYtdlpStatus,
     };
 }

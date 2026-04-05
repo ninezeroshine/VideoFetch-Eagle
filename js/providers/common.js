@@ -17,6 +17,8 @@ function buildBaseArgs(outputTemplate, url) {
         '--progress-template',
         'download:%(progress)j',
         '--no-part',
+        '--remote-components',
+        'ejs:github',
     ];
 
     // Point yt-dlp to locally installed ffmpeg if available

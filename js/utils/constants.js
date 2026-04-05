@@ -9,16 +9,12 @@ const TEMP_DIRECTORY_NAME = 'eagle-videofetch';
 const INSTALL_GUIDE_URL = 'https://github.com/yt-dlp/yt-dlp#installation';
 const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.mov', '.m4v', '.avi', '.flv', '.ts', '.mp3', '.m4a', '.opus', '.ogg'];
 const DOWNLOAD_BUTTON_LABEL = 'Download Video';
-const DOWNLOAD_BUTTON_LOADING_LABEL = 'Downloading...';
-const DOWNLOAD_BUTTON_STOP_LABEL = 'Stop';
 const IMPORT_ANNOTATION = 'Downloaded by Video Fetch plugin';
 const URL_NOT_RECOGNIZED = 'URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.';
 
 module.exports = {
     DEFAULT_PROVIDER_ID,
     DOWNLOAD_BUTTON_LABEL,
-    DOWNLOAD_BUTTON_LOADING_LABEL,
-    DOWNLOAD_BUTTON_STOP_LABEL,
     IMPORT_ANNOTATION,
     PLUGIN_NAME,
     URL_NOT_RECOGNIZED,

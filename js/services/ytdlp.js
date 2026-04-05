@@ -9,6 +9,22 @@ const { getLocalYtdlpPath } = require('./binManager');
 const eagleAdapter = require('../adapters/eagle');
 const { TEMP_DIRECTORY_NAME } = require('../utils/constants');
 
+/**
+ * Build PATH with common deno install locations so yt-dlp can find it.
+ */
+function buildEnhancedPath() {
+    const sep = process.platform === 'win32' ? ';' : ':';
+    const home = os.homedir();
+    const extra = [
+        path.join(home, 'AppData', 'Local', 'Microsoft', 'WinGet', 'Links'),
+        path.join(home, '.deno', 'bin'),
+        '/usr/local/bin',
+        '/opt/homebrew/bin',
+    ];
+
+    return (process.env.PATH || '') + sep + extra.join(sep);
+}
+
 function discoverPythonScriptsDirs() {
     const home = os.homedir();
     const dirs = [];
@@ -144,7 +160,7 @@ function runDownload(options) {
     const promise = new Promise((resolve, reject) => {
         const stderrLines = [];
         const processHandle = spawn(ytdlpPath, args, {
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PATH: buildEnhancedPath() },
             shell: false,
         });
 

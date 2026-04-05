@@ -4,6 +4,7 @@ const path = require('path');
 
 let app = null;
 let pluginRoot = null;
+let queue = null;
 
 function requireFromPlugin(relativePath) {
     if (!pluginRoot) {
@@ -20,15 +21,16 @@ function loadAppModules() {
 
     const eagleAdapter = requireFromPlugin('js/adapters/eagle.js');
     const animateModule = requireFromPlugin('js/services/animate.js');
-    const historyModule = requireFromPlugin('js/app/history.js');
-    const stateModule = requireFromPlugin('js/app/state.js');
-    const uiModule = requireFromPlugin('js/app/ui.js');
-    const providerModule = requireFromPlugin('js/providers/index.js');
-    const clipboardModule = requireFromPlugin('js/services/clipboard.js');
     const binManager = requireFromPlugin('js/services/binManager.js');
+    const clipboardModule = requireFromPlugin('js/services/clipboard.js');
     const fileDiscoveryModule = requireFromPlugin('js/services/fileDiscovery.js');
+    const historyModule = requireFromPlugin('js/app/history.js');
     const metadataModule = requireFromPlugin('js/services/metadata.js');
     const progressParserModule = requireFromPlugin('js/services/progressParser.js');
+    const providerModule = requireFromPlugin('js/providers/index.js');
+    const queueModule = requireFromPlugin('js/services/downloadQueue.js');
+    const stateModule = requireFromPlugin('js/app/state.js');
+    const uiModule = requireFromPlugin('js/app/ui.js');
     const ytdlpModule = requireFromPlugin('js/services/ytdlp.js');
     const constantsModule = requireFromPlugin('js/utils/constants.js');
 
@@ -39,21 +41,22 @@ function loadAppModules() {
         URL_NOT_RECOGNIZED: constantsModule.URL_NOT_RECOGNIZED,
         addHistoryItem: historyModule.addHistoryItem,
         animateModule,
+        checkSystemFfmpeg: binManager.checkSystemFfmpeg,
         cleanupSessionFile: ytdlpModule.cleanupSessionFile,
         cleanupStaleSessions: ytdlpModule.cleanupStaleSessions,
         clearHistory: historyModule.clearHistory,
         createDownloadSession: ytdlpModule.createDownloadSession,
+        createQueue: queueModule.createQueue,
         createUi: uiModule.createUi,
         detectYtdlp: ytdlpModule.detectYtdlp,
-        checkSystemFfmpeg: binManager.checkSystemFfmpeg,
         downloadFfmpeg: binManager.downloadFfmpeg,
         downloadYtdlp: binManager.downloadYtdlp,
-        getLocalFfmpegPath: binManager.getLocalFfmpegPath,
         eagleAdapter,
         extractFilePathFromLine: fileDiscoveryModule.extractFilePathFromLine,
         fetchRawMetadata: metadataModule.fetchRawMetadata,
         fetchThumbnailDataUri: metadataModule.fetchThumbnailDataUri,
         findByPrefix: fileDiscoveryModule.findByPrefix,
+        getLocalFfmpegPath: binManager.getLocalFfmpegPath,
         getProviderById: providerModule.getProviderById,
         getState: stateModule.getState,
         listProviders: providerModule.listProviders,
@@ -64,8 +67,8 @@ function loadAppModules() {
         resolveProvider: providerModule.resolveProvider,
         runDownload: ytdlpModule.runDownload,
         saveSelectedProvider: historyModule.saveSelectedProvider,
+        setActiveTab: stateModule.setActiveTab,
         setHistory: stateModule.setHistory,
-        setIsDownloading: stateModule.setIsDownloading,
         setSelectedProviderId: stateModule.setSelectedProviderId,
         setYtdlpPath: stateModule.setYtdlpPath,
     };
@@ -75,15 +78,8 @@ function loadAppModules() {
 
 let ui = null;
 let previousDefaultTags = '';
-let activeDownload = null;
 
-function updateProgressState(details) {
-    ui.updateProgress(details);
-
-    if (details && details.statusMessage) {
-        ui.setStatus(details.statusMessage, details.statusType || 'loading');
-    }
-}
+/* ─── Provider management ─── */
 
 function getImplementedProviderIds() {
     return app.listProviders()
@@ -121,6 +117,8 @@ function applyProvider(provider, skipAnimation, metadata) {
     previousDefaultTags = provider.getDefaultTags().join(', ');
 }
 
+/* ─── History ─── */
+
 function addToHistory(url, success, detail) {
     const history = app.addHistoryItem(localStorage, app.getState().downloadHistory, {
         detail,
@@ -133,379 +131,56 @@ function addToHistory(url, success, detail) {
     ui.renderHistory(history);
 }
 
+/* ─── Dependency management ─── */
+
 async function refreshYtdlpStatus() {
     const executablePath = await app.detectYtdlp();
     app.setYtdlpPath(executablePath);
     ui.updateYtdlpStatus(Boolean(executablePath));
 }
 
+async function refreshDependencyStatus() {
+    await refreshYtdlpStatus();
+    const hasFfmpeg = app.getLocalFfmpegPath() || await app.checkSystemFfmpeg();
+    ui.updateFfmpegStatus(Boolean(hasFfmpeg));
+}
+
 async function autoInstallYtdlp() {
     ui.setStatus('Downloading yt-dlp...', 'loading');
-    ui.showProgress(true);
-    ui.resetProgress();
 
     try {
         const installedPath = await app.downloadYtdlp(function (pct) {
-            updateProgressState({
-                info: pct + '% downloaded',
-                label: 'Installing yt-dlp...',
-                pct: pct,
-                stage: 'downloading',
-            });
+            ui.setStatus('Installing yt-dlp... ' + pct + '%', 'loading');
         });
 
         app.setYtdlpPath(installedPath);
-        ui.updateYtdlpStatus(true);
         ui.clearStatus();
-        ui.showProgress(false);
         app.eagleAdapter.showNotification({ title: app.PLUGIN_NAME, body: 'yt-dlp installed successfully.' });
         await refreshDependencyStatus();
     } catch (error) {
         app.eagleAdapter.logError('[VideoFetch] Auto-install failed: ' + error.message);
-        ui.showProgress(false);
         ui.setStatus('Install failed: ' + error.message, 'error');
     }
 }
 
 async function autoInstallFfmpeg() {
     ui.setStatus('Downloading ffmpeg (~130 MB)...', 'loading');
-    ui.showProgress(true);
-    ui.resetProgress();
 
     try {
         await app.downloadFfmpeg(function (pct) {
-            updateProgressState({
-                info: pct + '% downloaded',
-                label: 'Installing ffmpeg...',
-                pct: pct,
-                stage: 'downloading',
-            });
+            ui.setStatus('Installing ffmpeg... ' + pct + '%', 'loading');
         });
 
         ui.clearStatus();
-        ui.showProgress(false);
         app.eagleAdapter.showNotification({ title: app.PLUGIN_NAME, body: 'ffmpeg installed successfully.' });
         await refreshDependencyStatus();
     } catch (error) {
         app.eagleAdapter.logError('[VideoFetch] ffmpeg install failed: ' + error.message);
-        ui.showProgress(false);
         ui.setStatus('ffmpeg install failed: ' + error.message, 'error');
     }
 }
 
-async function refreshDependencyStatus() {
-    await refreshYtdlpStatus();
-
-    const hasFfmpeg = app.getLocalFfmpegPath() || await app.checkSystemFfmpeg();
-    ui.updateFfmpegStatus(Boolean(hasFfmpeg));
-}
-
-function handleProgressLine(line) {
-    const parsed = app.parseProgressLine(line);
-
-    if (!parsed) {
-        return;
-    }
-
-    updateProgressState(parsed);
-}
-
-async function runProviderDownload(options) {
-    const {
-        downloadOptions,
-        provider,
-        session,
-        ytdlpPath,
-    } = options;
-    let capturedFilePath = null;
-
-    function handleLine(line) {
-        const possiblePath = app.extractFilePathFromLine(line, session.tempDirectory);
-
-        if (possiblePath) {
-            capturedFilePath = possiblePath;
-            app.eagleAdapter.logInfo('[VideoFetch] Captured path: ' + capturedFilePath);
-        }
-
-        handleProgressLine(line);
-    }
-
-    let download = app.runDownload({
-        args: provider.buildDownloadArgs({
-            downloadOptions,
-            outputTemplate: session.outputTemplate,
-            url: options.url,
-        }),
-        onStderrLine(line) {
-            handleLine(line);
-        },
-        onStdoutLine(line) {
-            handleLine(line);
-        },
-        ytdlpPath,
-    });
-
-    activeDownload = download;
-    let result = await download.promise;
-
-    if (result.code !== 0 && typeof provider.shouldRetryWithClientFallback === 'function' && provider.shouldRetryWithClientFallback(result.stderrLines)) {
-        updateProgressState({
-            info: 'Switching to a token-safe YouTube client profile',
-            label: 'Retrying YouTube...',
-            pct: 8,
-            stage: 'retrying',
-            statusMessage: 'YouTube rejected the first request. Retrying with a token-safe client profile...',
-            statusType: 'loading',
-        });
-        capturedFilePath = null;
-
-        download = app.runDownload({
-            args: provider.buildDownloadArgs({
-                downloadOptions,
-                outputTemplate: session.outputTemplate,
-                retryMode: 'tokenSafeClient',
-                url: options.url,
-            }),
-            onStderrLine(line) {
-                handleLine(line);
-            },
-            onStdoutLine(line) {
-                handleLine(line);
-            },
-            ytdlpPath,
-        });
-
-        activeDownload = download;
-        result = await download.promise;
-    }
-
-    return {
-        capturedFilePath,
-        result,
-    };
-}
-
-async function addToEagle(sourceUrl, filePath, provider) {
-    updateProgressState({
-        info: path.basename(filePath),
-        label: 'Importing into Eagle...',
-        pct: 99,
-        stage: 'importing',
-        statusMessage: 'Adding to Eagle library...',
-        statusType: 'loading',
-    });
-
-    const tagsValue = ui.getTags();
-    const tags = tagsValue
-        ? tagsValue.split(',').map((tag) => tag.trim()).filter(Boolean)
-        : provider.getDefaultTags();
-
-    const name = path.basename(filePath, path.extname(filePath));
-    app.eagleAdapter.logInfo('[VideoFetch] Adding file to Eagle: ' + filePath);
-
-    try {
-        const selectedFolders = await app.eagleAdapter.getSelectedFolders();
-        const folderIds = selectedFolders.map((folder) => folder.id).filter(Boolean);
-
-        const importOptions = {
-            annotation: app.IMPORT_ANNOTATION,
-            name,
-            tags,
-            website: sourceUrl,
-        };
-
-        if (folderIds.length > 0) {
-            importOptions.folders = folderIds;
-            app.eagleAdapter.logDebug('[VideoFetch] Importing into folders: ' + folderIds.join(', '));
-        }
-
-        const itemId = await app.eagleAdapter.importFile(filePath, importOptions);
-
-        app.cleanupSessionFile(filePath);
-
-        if (itemId) {
-            updateProgressState({
-                info: path.basename(filePath),
-                label: 'Saved to Eagle',
-                pct: 100,
-                stage: 'success',
-                statusMessage: 'Video added to Eagle successfully.',
-                statusType: 'success',
-            });
-            addToHistory(sourceUrl, true, path.basename(filePath));
-            app.eagleAdapter.showNotification({
-                title: app.PLUGIN_NAME,
-                body: 'Video saved to Eagle: ' + name,
-            });
-            app.eagleAdapter.flashFrame(true);
-
-            try {
-                await app.eagleAdapter.openItem(itemId);
-            } catch (error) {
-                app.eagleAdapter.logInfo('[VideoFetch] Imported item could not be opened: ' + error.message);
-            }
-
-            return;
-        }
-
-        updateProgressState({
-            info: path.basename(filePath),
-            label: 'Saved to Eagle',
-            pct: 100,
-            stage: 'success',
-            statusMessage: 'Saved to Eagle (no item ID returned).',
-            statusType: 'success',
-        });
-        addToHistory(sourceUrl, true, 'OK');
-        app.eagleAdapter.showNotification({
-            title: app.PLUGIN_NAME,
-            body: 'Video saved to Eagle.',
-        });
-    } catch (error) {
-        app.eagleAdapter.logError('[VideoFetch] addToEagle error: ' + error.message);
-        updateProgressState({
-            info: error.message,
-            label: 'Import failed',
-            stage: 'failure',
-            statusMessage: 'Eagle import failed: ' + error.message,
-            statusType: 'error',
-        });
-        addToHistory(sourceUrl, false, error.message);
-        app.eagleAdapter.showNotification({
-            title: app.PLUGIN_NAME,
-            body: 'Import failed: ' + error.message,
-        });
-        app.eagleAdapter.flashFrame(true);
-    }
-}
-
-async function startDownload() {
-    const state = app.getState();
-
-    if (state.isDownloading) {
-        return;
-    }
-
-    const url = ui.getUrl();
-
-    if (!url) {
-        ui.setStatus('Please enter a URL.', 'error');
-        ui.focusUrlInput();
-        return;
-    }
-
-    if (!state.ytdlpPath) {
-        ui.setStatus('yt-dlp is not installed. See the install guide above.', 'error');
-        return;
-    }
-
-    const resolvedProvider = app.resolveProvider(url);
-
-    if (!resolvedProvider) {
-        ui.setStatus(app.URL_NOT_RECOGNIZED, 'error');
-        return;
-    }
-
-    const currentProvider = app.getProviderById(state.selectedProviderId);
-
-    if (!currentProvider || currentProvider.id !== resolvedProvider.id) {
-        applyProvider(resolvedProvider);
-    }
-
-    const provider = resolvedProvider;
-
-    app.setIsDownloading(true);
-    ui.clearStatus();
-    ui.resetProgress();
-    ui.showProgress(true);
-    updateProgressState({
-        info: provider.label,
-        label: 'Preparing download...',
-        pct: 2,
-        stage: 'preparing',
-        statusMessage: 'Starting download...',
-        statusType: 'loading',
-    });
-    ui.setDownloadButtonLoading();
-
-    try {
-        const session = await app.createDownloadSession();
-        const downloadOptions = ui.getProviderOptions();
-        updateProgressState({
-            info: 'Resolving media streams and destination file',
-            label: 'Preparing source...',
-            pct: 5,
-            stage: 'preparing',
-            statusMessage: `Preparing ${provider.label} media...`,
-            statusType: 'loading',
-        });
-        const { capturedFilePath, result } = await runProviderDownload({
-            downloadOptions,
-            provider,
-            session,
-            url,
-            ytdlpPath: state.ytdlpPath,
-        });
-
-        if (result.code === 0) {
-            const filePath = capturedFilePath || app.findByPrefix(session.tempDirectory, session.sessionId);
-
-            if (filePath) {
-                await addToEagle(url, filePath, provider);
-            } else {
-                app.eagleAdapter.logError('[VideoFetch] File not found after download in ' + session.tempDirectory);
-                updateProgressState({
-                    info: 'The final media file could not be located after download completion',
-                    label: 'Download incomplete',
-                    stage: 'failure',
-                    statusMessage: 'Download finished but the final file could not be found.',
-                    statusType: 'error',
-                });
-                addToHistory(url, false, 'File not found');
-            }
-        } else {
-            const errorMessage = (result.stderrLines.join(' ') || 'Unknown error').slice(0, 200);
-            app.eagleAdapter.logError('[VideoFetch] yt-dlp failed (code ' + result.code + '): ' + errorMessage);
-            const isYoutubeClientFailure = provider.id === 'youtube' && /precondition check failed|unable to download api page|http error 400/i.test(errorMessage);
-            const suffix = isYoutubeClientFailure ? ' Try updating yt-dlp if this keeps happening.' : '';
-            updateProgressState({
-                info: errorMessage,
-                label: 'Download failed',
-                stage: 'failure',
-                statusMessage: `Download failed (code ${result.code}): ${errorMessage}${suffix}`,
-                statusType: 'error',
-            });
-            addToHistory(url, false, 'Exit code ' + result.code);
-        }
-    } catch (error) {
-        app.eagleAdapter.logError('[VideoFetch] Failed to start yt-dlp: ' + error.message);
-        updateProgressState({
-            info: error.message,
-            label: 'Download failed',
-            stage: 'failure',
-            statusMessage: 'Failed to start yt-dlp: ' + error.message,
-            statusType: 'error',
-        });
-        addToHistory(url, false, error.message);
-    } finally {
-        activeDownload = null;
-        app.setIsDownloading(false);
-        ui.resetDownloadButton(Boolean(app.getState().ytdlpPath));
-    }
-}
-
-function stopDownload() {
-    if (!activeDownload) {
-        return;
-    }
-
-    activeDownload.abort();
-    activeDownload = null;
-    app.setIsDownloading(false);
-    ui.resetDownloadButton(Boolean(app.getState().ytdlpPath));
-    ui.showProgress(false);
-    ui.setStatus('Download cancelled.', 'error');
-}
+/* ─── Scan + apply provider ─── */
 
 async function scanAndApplyProvider(url) {
     const provider = app.resolveProvider(url);
@@ -527,7 +202,6 @@ async function scanAndApplyProvider(url) {
                 ? provider.parseMetadata(raw)
                 : null;
 
-            // Convert thumbnail to data URI (bypasses CORP for Instagram/TikTok CDNs)
             if (metadata && metadata.thumbnail) {
                 const dataUri = await app.fetchThumbnailDataUri(metadata.thumbnail);
 
@@ -544,6 +218,104 @@ async function scanAndApplyProvider(url) {
         applyProvider(provider);
     }
 }
+
+/* ─── Download actions ─── */
+
+function startSingleDownload() {
+    const state = app.getState();
+    const url = ui.getUrl();
+
+    if (!url) {
+        ui.setStatus('Please enter a URL.', 'error');
+        ui.focusUrlInput();
+        return;
+    }
+
+    if (!state.ytdlpPath) {
+        ui.setStatus('yt-dlp is not installed.', 'error');
+        return;
+    }
+
+    const provider = app.resolveProvider(url);
+
+    if (!provider) {
+        ui.setStatus(app.URL_NOT_RECOGNIZED, 'error');
+        return;
+    }
+
+    queue.add(url, provider);
+    ui.clearStatus();
+}
+
+function startBatchDownload() {
+    const state = app.getState();
+    const text = ui.getBatchInput();
+
+    if (!text.trim()) {
+        ui.setStatus('Paste URLs first.', 'error');
+        return;
+    }
+
+    if (!state.ytdlpPath) {
+        ui.setStatus('yt-dlp is not installed.', 'error');
+        return;
+    }
+
+    const lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    let added = 0;
+
+    for (const line of lines) {
+        const provider = app.resolveProvider(line);
+
+        if (provider) {
+            queue.add(line, provider);
+            added++;
+        }
+    }
+
+    if (added > 0) {
+        ui.clearStatus();
+        ui.setStatus('Added ' + added + ' downloads to queue.', 'success');
+    } else {
+        ui.setStatus('No supported URLs found.', 'error');
+    }
+}
+
+function handleDownload() {
+    if (app.getState().activeTab === 'batch') {
+        startBatchDownload();
+    } else {
+        startSingleDownload();
+    }
+}
+
+function handleStopDownload(id) {
+    queue.cancel(id);
+}
+
+/* ─── Queue event handlers ─── */
+
+function setupQueueEvents() {
+    queue.on('stateChange', function (id, item) {
+        ui.updateDownloadCard(id, item);
+
+        if (item.state === 'done') {
+            addToHistory(item.url, true, item.title || path.basename(item.url));
+        } else if (item.state === 'error') {
+            addToHistory(item.url, false, item.error || 'Error');
+        }
+    });
+
+    queue.on('progress', function (id, progress) {
+        ui.updateDownloadCardProgress(id, progress);
+    });
+
+    queue.on('queueUpdate', function () {
+        ui.updateDownloadButton(queue.hasActive(), queue.getAll().length);
+    });
+}
+
+/* ─── UI handlers ─── */
 
 async function pasteFromClipboard() {
     try {
@@ -619,21 +391,51 @@ function handleClearHistory() {
     ui.renderHistory(history);
 }
 
+function handleModeSwitch(mode) {
+    app.setActiveTab(mode);
+    ui.setMode(mode);
+}
+
 function openInstallGuide() {
     app.eagleAdapter.openExternal(app.INSTALL_GUIDE_URL);
 }
 
+/* ─── Initialize ─── */
+
 async function initialize() {
+    queue = app.createQueue();
+
+    queue.init({
+        cleanupSessionFile: app.cleanupSessionFile,
+        createDownloadSession: app.createDownloadSession,
+        extractFilePathFromLine: app.extractFilePathFromLine,
+        fetchRawMetadata: app.fetchRawMetadata,
+        findByPrefix: app.findByPrefix,
+        getSelectedFolders: app.eagleAdapter.getSelectedFolders,
+        importAnnotation: app.IMPORT_ANNOTATION,
+        importFile: app.eagleAdapter.importFile,
+        parseProgressLine: app.parseProgressLine,
+        runDownload: app.runDownload,
+        showNotification: function (body) {
+            app.eagleAdapter.showNotification({ title: app.PLUGIN_NAME, body: body });
+            app.eagleAdapter.flashFrame(true);
+        },
+        getYtdlpPath: function () { return app.getState().ytdlpPath; },
+    });
+
+    setupQueueEvents();
+
     ui = app.createUi({
         onAutoInstallFfmpeg: autoInstallFfmpeg,
         onAutoInstallYtdlp: autoInstallYtdlp,
         onClearHistory: handleClearHistory,
-        onDownload: startDownload,
+        onDownload: handleDownload,
+        onModeSwitch: handleModeSwitch,
         onOpenInstallGuide: openInstallGuide,
         onPaste: pasteFromClipboard,
         onReuseUrl: handleReuseUrl,
         onScan: scanUrl,
-        onStop: stopDownload,
+        onStopDownload: handleStopDownload,
     });
 
     const history = app.loadHistory(localStorage);
@@ -659,8 +461,11 @@ eagle.onPluginShow(() => {
 });
 
 eagle.onPluginBeforeExit(() => {
+    if (queue) {
+        queue.cancelAll();
+    }
+
     if (app) {
         app.cleanupStaleSessions();
     }
 });
-
