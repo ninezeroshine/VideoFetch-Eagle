@@ -65,11 +65,22 @@ function run() {
     });
 
     assert(twitterArgs.includes('--no-playlist'));
-    assert(twitterArgs.includes('--progress-delta'));
-    assert(twitterArgs.includes('1'));
-    assert(twitterArgs.includes('--progress-template'));
-    assert(twitterArgs.includes('download:%(progress)j'));
-    assert(!twitterArgs.includes('--print'), 'Should not include --print (suppresses progress)');
+    assert(twitterArgs.includes('--merge-output-format'));
+    assert(twitterArgs.includes('mp4'));
+
+    // Twitter MP3
+    const twitterMp3Args = getProviderById('twitter').buildDownloadArgs({
+        downloadOptions: { format: 'mp3' },
+        outputTemplate: 'tmp/%(id)s.%(ext)s',
+        url: 'https://x.com/user/status/123',
+    });
+
+    assert(twitterMp3Args.includes('--extract-audio'));
+    assert(twitterMp3Args.includes('mp3'));
+    assert(!twitterMp3Args.includes('--merge-output-format'), 'MP3 should not merge');
+
+    // Twitter metadata support
+    assert.strictEqual(getProviderById('twitter').supportsMetadata, true);
 
     // --- Instagram ---
     const instagramReelProvider = resolveProvider('https://www.instagram.com/reel/ABC123/');
@@ -82,8 +93,9 @@ function run() {
 
     assert.strictEqual(resolveProvider('https://instagram.com/username'), null, 'Instagram profile URL should not match');
 
+    // Instagram MP4
     const instagramArgs = getProviderById('instagram').buildDownloadArgs({
-        downloadOptions: { quality: '1080p' },
+        downloadOptions: { format: 'mp4' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         url: 'https://www.instagram.com/reel/ABC123/',
     });
@@ -92,16 +104,22 @@ function run() {
     assert(instagramArgs.includes('--merge-output-format'));
     assert(instagramArgs.includes('mp4'));
     assert(instagramArgs.includes('--no-mtime'));
-    assert(instagramArgs.includes('bestvideo[height<=1080]+bestaudio/best[height<=1080]'));
-    assert(instagramArgs.includes('tmp/%(id)s.%(ext)s'));
+    assert(instagramArgs.includes('bestvideo+bestaudio/best'));
 
-    const instagramBestArgs = getProviderById('instagram').buildDownloadArgs({
-        downloadOptions: { quality: 'best' },
+    // Instagram MP3
+    const instagramMp3Args = getProviderById('instagram').buildDownloadArgs({
+        downloadOptions: { format: 'mp3' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         url: 'https://www.instagram.com/reel/ABC123/',
     });
 
-    assert(instagramBestArgs.includes('bestvideo+bestaudio/best'));
+    assert(instagramMp3Args.includes('--extract-audio'));
+    assert(instagramMp3Args.includes('--audio-format'));
+    assert(instagramMp3Args.includes('mp3'));
+    assert(!instagramMp3Args.includes('--merge-output-format'), 'MP3 should not merge');
+
+    // Instagram metadata support
+    assert.strictEqual(getProviderById('instagram').supportsMetadata, true);
 
     // --- TikTok ---
     const tiktokProvider = resolveProvider('https://www.tiktok.com/@user/video/123456');
@@ -114,8 +132,9 @@ function run() {
 
     assert.strictEqual(resolveProvider('https://tiktok.example.com/video'), null, 'Non-TikTok domain should not match');
 
+    // TikTok MP4 (watermark-free)
     const tiktokArgs = getProviderById('tiktok').buildDownloadArgs({
-        downloadOptions: { quality: 'best' },
+        downloadOptions: { format: 'mp4' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         url: 'https://www.tiktok.com/@user/video/123456',
     });
@@ -124,16 +143,20 @@ function run() {
     assert(tiktokArgs.includes('--merge-output-format'));
     assert(tiktokArgs.includes('mp4'));
     assert(tiktokArgs.includes('--no-mtime'));
-    assert(tiktokArgs.includes('tmp/%(id)s.%(ext)s'));
-    assert(tiktokArgs.some((arg) => arg.includes('watermark')), 'Best quality should use watermark-free format selector');
+    assert(tiktokArgs.some((arg) => arg.includes('watermark')), 'Should use watermark-free format selector');
 
-    const tiktokStdArgs = getProviderById('tiktok').buildDownloadArgs({
-        downloadOptions: { quality: 'standard' },
+    // TikTok MP3
+    const tiktokMp3Args = getProviderById('tiktok').buildDownloadArgs({
+        downloadOptions: { format: 'mp3' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         url: 'https://www.tiktok.com/@user/video/123456',
     });
 
-    assert(tiktokStdArgs.includes('best'), 'Standard quality should use simple best selector');
+    assert(tiktokMp3Args.includes('--extract-audio'));
+    assert(tiktokMp3Args.includes('mp3'));
+
+    // TikTok metadata support
+    assert.strictEqual(getProviderById('tiktok').supportsMetadata, true);
 
     // --- common.js buildBaseArgs ---
     const { buildBaseArgs } = require('../js/providers/common');

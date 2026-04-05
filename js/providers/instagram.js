@@ -1,6 +1,7 @@
 'use strict';
 
-const { buildBaseArgs } = require('./common');
+const { FORMAT_OPTIONS, buildAudioArgs, buildBaseArgs, isAudioOnly } = require('./common');
+const { parseBasicMetadata } = require('../services/metadata');
 
 function matchesUrl(url) {
     return /^https?:\/\/(www\.)?instagram\.com\/(reel|p|reels|stories|tv)\//i.test(url);
@@ -18,54 +19,33 @@ function getInputPlaceholder() {
     return 'https://www.instagram.com/reel/...';
 }
 
-function getHeightLimit(quality) {
-    const normalized = String(quality || 'best');
+/* ─── Metadata ─── */
 
-    if (normalized === '1080p') {
-        return '1080';
-    }
+const supportsMetadata = true;
 
-    if (normalized === '720p') {
-        return '720';
-    }
-
-    return null;
+function parseMetadata(raw) {
+    return parseBasicMetadata(raw);
 }
 
-function buildFormatSelector(downloadOptions) {
-    const options = downloadOptions || {};
-    const heightLimit = getHeightLimit(options.quality);
-
-    if (heightLimit) {
-        return `bestvideo[height<=${heightLimit}]+bestaudio/best[height<=${heightLimit}]`;
-    }
-
-    return 'bestvideo+bestaudio/best';
-}
+/* ─── Download options ─── */
 
 function getDownloadOptions() {
     return {
-        defaults: {
-            quality: 'best',
-        },
+        defaults: { format: 'mp4' },
         schema: [
             {
-                description: 'Target quality for the downloaded video',
+                description: 'Best available quality',
                 key: 'quality',
                 label: 'Quality',
-                options: [
-                    { label: 'Best available', value: 'best' },
-                    { label: '1080p', value: '1080p' },
-                    { label: '720p', value: '720p' },
-                ],
-                type: 'select',
+                type: 'static',
+                value: 'Best',
             },
             {
-                description: 'Output is always MP4 for best compatibility',
-                key: 'container',
-                label: 'Output',
-                type: 'static',
-                value: 'MP4',
+                description: 'Video with audio or audio only',
+                key: 'format',
+                label: 'Format',
+                options: FORMAT_OPTIONS,
+                type: 'chips',
             },
         ],
     };
@@ -73,11 +53,19 @@ function getDownloadOptions() {
 
 function buildDownloadArgs(options) {
     const { downloadOptions, outputTemplate, url } = options;
-    const formatSelector = buildFormatSelector(downloadOptions);
+
+    if (isAudioOnly(downloadOptions)) {
+        return [
+            '-f', 'bestaudio/best',
+            ...buildAudioArgs(),
+            '--no-mtime',
+            ...buildBaseArgs(outputTemplate, url),
+        ];
+    }
 
     return [
         '-f',
-        formatSelector,
+        'bestvideo+bestaudio/best',
         '--merge-output-format',
         'mp4',
         '--no-mtime',
@@ -95,4 +83,6 @@ module.exports = {
     isImplemented: true,
     label: 'Instagram',
     matchesUrl,
+    parseMetadata,
+    supportsMetadata,
 };

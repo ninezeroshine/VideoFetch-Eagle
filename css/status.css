@@ -108,7 +108,7 @@
 
 .auto-install-btn {
     padding: var(--space-7) var(--space-14);
-    background: var(--accent);
+    background: var(--accent-gradient);
     border: none;
     border-radius: var(--space-6);
     color: #fff;

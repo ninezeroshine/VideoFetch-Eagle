@@ -9,7 +9,7 @@
     "main": {
         "url": "index.html",
         "width": 560,
-        "height": 740,
+        "height": 880,
         "minWidth": 480,
         "minHeight": 500,
         "frame": true,

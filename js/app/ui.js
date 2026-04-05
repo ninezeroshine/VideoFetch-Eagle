@@ -596,6 +596,13 @@ function createUi(options) {
                         chip.classList.add('active');
                         currentProviderOptionValues[optionKey] = choice.value;
                         providerOptionStateByProviderId[provider.id] = Object.assign({}, currentProviderOptionValues);
+
+                        if (optionKey === 'format') {
+                            const tags = elements.tagsInput.value;
+                            elements.tagsInput.value = choice.value === 'mp3'
+                                ? tags.replace(/\bvideo\b/g, 'audio')
+                                : tags.replace(/\baudio\b/g, 'video');
+                        }
                     });
 
                     group.appendChild(chip);
@@ -713,9 +720,10 @@ function createUi(options) {
             return '';
         }
 
-        const h =Math.floor(seconds / 3600);
-        const m =Math.floor((seconds % 3600) / 60);
-        const s =seconds % 60;
+        const rounded = Math.floor(seconds);
+        const h = Math.floor(rounded / 3600);
+        const m = Math.floor((rounded % 3600) / 60);
+        const s = rounded % 60;
 
         if (h > 0) {
             return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
@@ -877,6 +885,11 @@ function createUi(options) {
         anim.springPop(elements.downloadButton);
     }
 
+    function setScanLoading(isLoading) {
+        elements.scanButton.classList.toggle('scanning', isLoading);
+        elements.scanButton.disabled = isLoading;
+    }
+
     updateProgressStage({
         badgeLabel: PROGRESS_STAGE_BADGE_LABELS.preparing,
         stage: 'preparing',
@@ -895,6 +908,7 @@ function createUi(options) {
         resetDownloadButton,
         setDownloadButtonLoading,
         setProviderForm,
+        setScanLoading,
         setSelectedProvider,
         setStatus,
         setUrl,

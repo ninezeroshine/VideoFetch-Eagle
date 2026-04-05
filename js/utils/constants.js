@@ -1,6 +1,7 @@
 'use strict';
 
 const DEFAULT_PROVIDER_ID = 'twitter';
+const PLUGIN_NAME = 'Video Fetch';
 const HISTORY_STORAGE_KEY = 'vf_history';
 const SELECTED_PROVIDER_STORAGE_KEY = 'vf_selected_provider';
 const MAX_HISTORY_ITEMS = 20;
@@ -19,6 +20,7 @@ module.exports = {
     DOWNLOAD_BUTTON_LOADING_LABEL,
     DOWNLOAD_BUTTON_STOP_LABEL,
     IMPORT_ANNOTATION,
+    PLUGIN_NAME,
     URL_NOT_RECOGNIZED,
     HISTORY_STORAGE_KEY,
     INSTALL_GUIDE_URL,

@@ -1,6 +1,7 @@
 'use strict';
 
-const { buildBaseArgs } = require('./common');
+const { FORMAT_OPTIONS, buildAudioArgs, buildBaseArgs, isAudioOnly } = require('./common');
+const { parseBasicMetadata } = require('../services/metadata');
 
 function matchesUrl(url) {
     return /^https?:\/\/(www\.)?(twitter\.com|x\.com)\//i.test(url);
@@ -18,29 +19,48 @@ function getInputPlaceholder() {
     return 'https://x.com/user/status/...';
 }
 
+/* ─── Metadata ─── */
+
+const supportsMetadata = true;
+
+function parseMetadata(raw) {
+    return parseBasicMetadata(raw);
+}
+
+/* ─── Download options ─── */
+
 function getDownloadOptions() {
     return {
+        defaults: { format: 'mp4' },
         schema: [
             {
-                description: 'Best available media from the selected post',
+                description: 'Best available quality',
                 key: 'quality',
                 label: 'Quality',
                 type: 'static',
-                value: 'Automatic',
+                value: 'Best',
             },
             {
-                description: 'Audio is included whenever the source provides it',
-                key: 'container',
-                label: 'Output',
-                type: 'static',
-                value: 'Best available',
+                description: 'Video with audio or audio only',
+                key: 'format',
+                label: 'Format',
+                options: FORMAT_OPTIONS,
+                type: 'chips',
             },
         ],
     };
 }
 
 function buildDownloadArgs(options) {
-    const { outputTemplate, url } = options;
+    const { downloadOptions, outputTemplate, url } = options;
+
+    if (isAudioOnly(downloadOptions)) {
+        return [
+            '-f', 'bestaudio/best',
+            ...buildAudioArgs(),
+            ...buildBaseArgs(outputTemplate, url),
+        ];
+    }
 
     return [
         '-f',
@@ -61,4 +81,6 @@ module.exports = {
     isImplemented: true,
     label: 'X / Twitter',
     matchesUrl,
+    parseMetadata,
+    supportsMetadata,
 };

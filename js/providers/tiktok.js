@@ -1,6 +1,7 @@
 'use strict';
 
-const { buildBaseArgs } = require('./common');
+const { FORMAT_OPTIONS, buildAudioArgs, buildBaseArgs, isAudioOnly } = require('./common');
+const { parseBasicMetadata } = require('../services/metadata');
 
 function matchesUrl(url) {
     return /^https?:\/\/(www\.|vm\.|vt\.)?tiktok\.com\//i.test(url);
@@ -18,39 +19,33 @@ function getInputPlaceholder() {
     return 'https://www.tiktok.com/@user/video/...';
 }
 
-function buildFormatSelector(downloadOptions) {
-    const options = downloadOptions || {};
+/* ─── Metadata ─── */
 
-    if (options.quality === 'standard') {
-        return 'best';
-    }
+const supportsMetadata = true;
 
-    // Prefer watermark-free source, fall back to best available
-    return 'bestvideo[format_note!*=watermark]+bestaudio/bestvideo+bestaudio/best';
+function parseMetadata(raw) {
+    return parseBasicMetadata(raw);
 }
+
+/* ─── Download options ─── */
 
 function getDownloadOptions() {
     return {
-        defaults: {
-            quality: 'best',
-        },
+        defaults: { format: 'mp4' },
         schema: [
             {
-                description: 'Best quality downloads without watermark when available',
+                description: 'Best quality without watermark',
                 key: 'quality',
                 label: 'Quality',
-                options: [
-                    { label: 'Best (no watermark)', value: 'best' },
-                    { label: 'Standard', value: 'standard' },
-                ],
-                type: 'select',
+                type: 'static',
+                value: 'Best',
             },
             {
-                description: 'Output is always MP4 for best compatibility',
-                key: 'container',
-                label: 'Output',
-                type: 'static',
-                value: 'MP4',
+                description: 'Video with audio or audio only',
+                key: 'format',
+                label: 'Format',
+                options: FORMAT_OPTIONS,
+                type: 'chips',
             },
         ],
     };
@@ -58,11 +53,19 @@ function getDownloadOptions() {
 
 function buildDownloadArgs(options) {
     const { downloadOptions, outputTemplate, url } = options;
-    const formatSelector = buildFormatSelector(downloadOptions);
+
+    if (isAudioOnly(downloadOptions)) {
+        return [
+            '-f', 'bestaudio/best',
+            ...buildAudioArgs(),
+            '--no-mtime',
+            ...buildBaseArgs(outputTemplate, url),
+        ];
+    }
 
     return [
         '-f',
-        formatSelector,
+        'bestvideo[format_note!*=watermark]+bestaudio/bestvideo+bestaudio/best',
         '--merge-output-format',
         'mp4',
         '--no-mtime',
@@ -80,4 +83,6 @@ module.exports = {
     isImplemented: true,
     label: 'TikTok',
     matchesUrl,
+    parseMetadata,
+    supportsMetadata,
 };

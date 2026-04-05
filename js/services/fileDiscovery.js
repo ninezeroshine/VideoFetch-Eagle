@@ -38,6 +38,12 @@ function extractFilePathFromLine(line, tmpDir) {
         return sanitizePath(mergeMatch[1]);
     }
 
+    const extractAudioMatch = line.match(/\[ExtractAudio\]\s+Destination:\s+(.+)$/i);
+
+    if (extractAudioMatch) {
+        return sanitizePath(extractAudioMatch[1]);
+    }
+
     return null;
 }
 

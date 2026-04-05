@@ -1,6 +1,7 @@
 'use strict';
 
-const { buildBaseArgs } = require('./common');
+const { FORMAT_OPTIONS, buildAudioArgs, buildBaseArgs, isAudioOnly } = require('./common');
+const { extractQualities, hasAudioFormats, parseBasicMetadata } = require('../services/metadata');
 
 function matchesUrl(url) {
     return /^https?:\/\/((www|m)\.)?(youtube\.com|youtu\.be)\//i.test(url);
@@ -22,42 +23,30 @@ function getInputPlaceholder() {
 
 const supportsMetadata = true;
 
-function pickBestThumbnail(raw) {
-    // Prefer maxresdefault, then hqdefault, then any from thumbnails array, then field
-    if (raw.id) {
-        return 'https://i.ytimg.com/vi/' + raw.id + '/hqdefault.jpg';
-    }
-
-    if (Array.isArray(raw.thumbnails) && raw.thumbnails.length > 0) {
-        const best =raw.thumbnails[raw.thumbnails.length - 1];
-        return best.url || best;
-    }
-
-    return raw.thumbnail || '';
-}
-
 function parseMetadata(raw) {
-    if (!raw) {
+    const base = parseBasicMetadata(raw);
+
+    if (!base) {
         return null;
     }
 
-    const { extractQualities, hasAudioFormats } = require('../services/metadata');
-    const qualities = extractQualities(raw.formats);
+    // YouTube-specific: use ytimg.com URL for reliable thumbnail
+    if (raw.id) {
+        base.thumbnail = 'https://i.ytimg.com/vi/' + raw.id + '/hqdefault.jpg';
+    }
+
+    // YouTube-specific: extract available quality options
+    const heights = extractQualities(raw.formats);
     const qualityOptions = [{ label: 'Best', value: 'best' }];
 
-    for (const h of qualities) {
+    for (const h of heights) {
         qualityOptions.push({ label: h + 'p', value: h + 'p' });
     }
 
-    return {
-        title: raw.title || raw.fulltitle || '',
-        thumbnail: pickBestThumbnail(raw),
-        channel: raw.channel || raw.uploader || '',
-        duration: raw.duration || 0,
-        viewCount: raw.view_count || 0,
-        qualities: qualityOptions,
-        hasAudio: hasAudioFormats(raw.formats),
-    };
+    base.qualities = qualityOptions;
+    base.hasAudio = hasAudioFormats(raw.formats);
+
+    return base;
 }
 
 /* ─── Download options ─── */
@@ -74,13 +63,7 @@ function getDownloadOptions(metadata) {
         qualities = metadata.qualities;
     }
 
-    const formatOptions = [
-        { label: 'MP4', value: 'mp4' },
-    ];
-
-    if (!metadata || metadata.hasAudio !== false) {
-        formatOptions.push({ label: 'MP3', value: 'mp3' });
-    }
+    const formatOptions = FORMAT_OPTIONS.slice();
 
     return {
         defaults: {
@@ -143,7 +126,6 @@ function getExtractorArgs(retryMode) {
 function buildDownloadArgs(options) {
     const { downloadOptions, outputTemplate, retryMode, url } = options;
     const opts = downloadOptions || {};
-    const isAudioOnly = opts.format === 'mp3';
     const formatSelector = buildFormatSelector(opts);
 
     const providerArgs = [
@@ -152,8 +134,8 @@ function buildDownloadArgs(options) {
         ...getExtractorArgs(retryMode),
     ];
 
-    if (isAudioOnly) {
-        providerArgs.push('--extract-audio', '--audio-format', 'mp3');
+    if (isAudioOnly(opts)) {
+        providerArgs.push(...buildAudioArgs());
     } else {
         providerArgs.push('--merge-output-format', 'mp4');
     }

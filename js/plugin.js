@@ -35,6 +35,7 @@ function loadAppModules() {
     app = {
         IMPORT_ANNOTATION: constantsModule.IMPORT_ANNOTATION,
         INSTALL_GUIDE_URL: constantsModule.INSTALL_GUIDE_URL,
+        PLUGIN_NAME: constantsModule.PLUGIN_NAME,
         URL_NOT_RECOGNIZED: constantsModule.URL_NOT_RECOGNIZED,
         addHistoryItem: historyModule.addHistoryItem,
         animateModule,
@@ -51,6 +52,7 @@ function loadAppModules() {
         eagleAdapter,
         extractFilePathFromLine: fileDiscoveryModule.extractFilePathFromLine,
         fetchRawMetadata: metadataModule.fetchRawMetadata,
+        fetchThumbnailDataUri: metadataModule.fetchThumbnailDataUri,
         findByPrefix: fileDiscoveryModule.findByPrefix,
         getProviderById: providerModule.getProviderById,
         getState: stateModule.getState,
@@ -156,7 +158,7 @@ async function autoInstallYtdlp() {
         ui.updateYtdlpStatus(true);
         ui.clearStatus();
         ui.showProgress(false);
-        app.eagleAdapter.showNotification({ title: 'Video Fetch', body: 'yt-dlp installed successfully.' });
+        app.eagleAdapter.showNotification({ title: app.PLUGIN_NAME, body: 'yt-dlp installed successfully.' });
         await refreshDependencyStatus();
     } catch (error) {
         app.eagleAdapter.logError('[VideoFetch] Auto-install failed: ' + error.message);
@@ -182,7 +184,7 @@ async function autoInstallFfmpeg() {
 
         ui.clearStatus();
         ui.showProgress(false);
-        app.eagleAdapter.showNotification({ title: 'Video Fetch', body: 'ffmpeg installed successfully.' });
+        app.eagleAdapter.showNotification({ title: app.PLUGIN_NAME, body: 'ffmpeg installed successfully.' });
         await refreshDependencyStatus();
     } catch (error) {
         app.eagleAdapter.logError('[VideoFetch] ffmpeg install failed: ' + error.message);
@@ -332,7 +334,7 @@ async function addToEagle(sourceUrl, filePath, provider) {
             });
             addToHistory(sourceUrl, true, path.basename(filePath));
             app.eagleAdapter.showNotification({
-                title: 'Video Fetch',
+                title: app.PLUGIN_NAME,
                 body: 'Video saved to Eagle: ' + name,
             });
             app.eagleAdapter.flashFrame(true);
@@ -356,7 +358,7 @@ async function addToEagle(sourceUrl, filePath, provider) {
         });
         addToHistory(sourceUrl, true, 'OK');
         app.eagleAdapter.showNotification({
-            title: 'Video Fetch',
+            title: app.PLUGIN_NAME,
             body: 'Video saved to Eagle.',
         });
     } catch (error) {
@@ -370,7 +372,7 @@ async function addToEagle(sourceUrl, filePath, provider) {
         });
         addToHistory(sourceUrl, false, error.message);
         app.eagleAdapter.showNotification({
-            title: 'Video Fetch',
+            title: app.PLUGIN_NAME,
             body: 'Import failed: ' + error.message,
         });
         app.eagleAdapter.flashFrame(true);
@@ -517,15 +519,27 @@ async function scanAndApplyProvider(url) {
     ui.hidePreview();
 
     if (provider.supportsMetadata && app.getState().ytdlpPath) {
-        ui.setStatus('Scanning video info...', 'loading');
+        ui.setScanLoading(true);
 
-        const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, url);
-        const metadata = typeof provider.parseMetadata === 'function'
-            ? provider.parseMetadata(raw)
-            : null;
+        try {
+            const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, url);
+            const metadata = typeof provider.parseMetadata === 'function'
+                ? provider.parseMetadata(raw)
+                : null;
 
-        ui.clearStatus();
-        applyProvider(provider, false, metadata);
+            // Convert thumbnail to data URI (bypasses CORP for Instagram/TikTok CDNs)
+            if (metadata && metadata.thumbnail) {
+                const dataUri = await app.fetchThumbnailDataUri(metadata.thumbnail);
+
+                if (dataUri) {
+                    metadata.thumbnail = dataUri;
+                }
+            }
+
+            applyProvider(provider, false, metadata);
+        } finally {
+            ui.setScanLoading(false);
+        }
     } else {
         applyProvider(provider);
     }

@@ -11,6 +11,7 @@ body[data-provider="twitter"] {
     --accent:        #1d9bf0;
     --accent-hover:  #4db8f7;
     --accent-dark:   #1577b8;
+    --accent-gradient: linear-gradient(135deg, #1577b8, #1d9bf0, #4db8f7);
 
     --accent-a02: rgba(29, 155, 240, 0.02);
     --accent-a07: rgba(29, 155, 240, 0.07);
@@ -31,6 +32,7 @@ body[data-provider="youtube"] {
     --accent:        #ff0000;
     --accent-hover:  #ff4444;
     --accent-dark:   #cc0000;
+    --accent-gradient: linear-gradient(135deg, #cc0000, #ff0000, #ff4444);
 
     --accent-a02: rgba(255, 0, 0, 0.02);
     --accent-a07: rgba(255, 0, 0, 0.07);
@@ -46,51 +48,44 @@ body[data-provider="youtube"] {
     --shadow-accent-dot:  0 0 12px rgba(255, 0, 0, 0.45);
 }
 
-/* ─── Instagram — Pink ─── */
+/* ─── Instagram — Magenta Purple ─── */
 body[data-provider="instagram"] {
-    --accent:        #e1306c;
-    --accent-hover:  #f05a90;
-    --accent-dark:   #b8204f;
+    --accent:        #C13584;
+    --accent-hover:  #d459a0;
+    --accent-dark:   #9b2a6a;
+    --accent-gradient: linear-gradient(135deg, #833AB4, #C13584, #E1306C, #F56040);
 
-    --accent-a02: rgba(225, 48, 108, 0.02);
-    --accent-a07: rgba(225, 48, 108, 0.07);
-    --accent-a10: rgba(225, 48, 108, 0.1);
-    --accent-a12: rgba(225, 48, 108, 0.12);
-    --accent-a14: rgba(225, 48, 108, 0.14);
-    --accent-a24: rgba(225, 48, 108, 0.24);
-    --accent-a36: rgba(225, 48, 108, 0.36);
-    --accent-a45: rgba(225, 48, 108, 0.45);
+    --accent-a02: rgba(193, 53, 132, 0.02);
+    --accent-a07: rgba(193, 53, 132, 0.07);
+    --accent-a10: rgba(193, 53, 132, 0.1);
+    --accent-a12: rgba(193, 53, 132, 0.12);
+    --accent-a14: rgba(193, 53, 132, 0.14);
+    --accent-a24: rgba(193, 53, 132, 0.24);
+    --accent-a36: rgba(193, 53, 132, 0.36);
+    --accent-a45: rgba(193, 53, 132, 0.45);
 
-    --shadow-accent-glow: 0 6px 20px rgba(225, 48, 108, 0.3);
-    --shadow-bar-glow:    0 0 16px rgba(225, 48, 108, 0.24);
-    --shadow-accent-dot:  0 0 12px rgba(225, 48, 108, 0.45);
+    --shadow-accent-glow: 0 6px 20px rgba(193, 53, 132, 0.3);
+    --shadow-bar-glow:    0 0 16px rgba(193, 53, 132, 0.24);
+    --shadow-accent-dot:  0 0 12px rgba(193, 53, 132, 0.45);
 }
 
-/* ─── TikTok — Cyan ─── */
+/* ─── TikTok — Red + Cyan ─── */
 body[data-provider="tiktok"] {
-    --accent:        #25f4ee;
-    --accent-hover:  #5ef7f2;
-    --accent-dark:   #1ac4bf;
+    --accent:        #fe2c55;
+    --accent-hover:  #ff5c7d;
+    --accent-dark:   #d41e44;
+    --accent-gradient: linear-gradient(135deg, #1a1a2e, #fe2c55, #25f4ee);
 
-    --accent-a02: rgba(37, 244, 238, 0.02);
-    --accent-a07: rgba(37, 244, 238, 0.07);
-    --accent-a10: rgba(37, 244, 238, 0.1);
-    --accent-a12: rgba(37, 244, 238, 0.12);
-    --accent-a14: rgba(37, 244, 238, 0.14);
-    --accent-a24: rgba(37, 244, 238, 0.24);
-    --accent-a36: rgba(37, 244, 238, 0.36);
-    --accent-a45: rgba(37, 244, 238, 0.45);
+    --accent-a02: rgba(254, 44, 85, 0.02);
+    --accent-a07: rgba(254, 44, 85, 0.07);
+    --accent-a10: rgba(254, 44, 85, 0.1);
+    --accent-a12: rgba(254, 44, 85, 0.12);
+    --accent-a14: rgba(254, 44, 85, 0.14);
+    --accent-a24: rgba(254, 44, 85, 0.24);
+    --accent-a36: rgba(254, 44, 85, 0.36);
+    --accent-a45: rgba(254, 44, 85, 0.45);
 
-    --shadow-accent-glow: 0 6px 20px rgba(37, 244, 238, 0.25);
-    --shadow-bar-glow:    0 0 16px rgba(37, 244, 238, 0.2);
-    --shadow-accent-dot:  0 0 12px rgba(37, 244, 238, 0.4);
-}
-
-/* TikTok text on accent needs dark color for readability */
-body[data-provider="tiktok"] .download-btn {
-    color: #0a0a0a;
-}
-
-body[data-provider="tiktok"] .option-value {
-    color: var(--accent-dark);
+    --shadow-accent-glow: 0 6px 20px rgba(254, 44, 85, 0.3);
+    --shadow-bar-glow:    0 0 16px rgba(254, 44, 85, 0.24);
+    --shadow-accent-dot:  0 0 12px rgba(254, 44, 85, 0.45);
 }

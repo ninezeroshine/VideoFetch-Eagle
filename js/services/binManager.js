@@ -9,6 +9,7 @@ const path = require('path');
 /* ─── Config ─── */
 
 const BIN_DIR_NAME = '.eagle-videofetch';
+const UNSUPPORTED_PLATFORM = 'Unsupported platform: ' + process.platform;
 
 const YTDLP_URLS = {
     win32: 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe',
@@ -146,7 +147,7 @@ function downloadYtdlp(onProgress) {
     const filename = YTDLP_FILENAMES[process.platform];
 
     if (!url || !filename) {
-        return Promise.reject(new Error('Unsupported platform: ' + process.platform));
+        return Promise.reject(new Error(UNSUPPORTED_PLATFORM));
     }
 
     const binDir = ensureBinDirectory();
@@ -182,7 +183,7 @@ function downloadFfmpeg(onProgress) {
     const url = FFMPEG_URLS[process.platform];
 
     if (!url) {
-        return Promise.reject(new Error('Unsupported platform: ' + process.platform));
+        return Promise.reject(new Error(UNSUPPORTED_PLATFORM));
     }
 
     const binDir = ensureBinDirectory();

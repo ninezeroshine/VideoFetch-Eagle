@@ -1,5 +1,6 @@
 'use strict';
 
+const path = require('path');
 const { getLocalFfmpegPath } = require('../services/binManager');
 
 /**
@@ -22,7 +23,6 @@ function buildBaseArgs(outputTemplate, url) {
     const localFfmpeg = getLocalFfmpegPath();
 
     if (localFfmpeg) {
-        const path = require('path');
         args.push('--ffmpeg-location', path.dirname(localFfmpeg));
     }
 
@@ -31,6 +31,31 @@ function buildBaseArgs(outputTemplate, url) {
     return args;
 }
 
+/**
+ * Shared format chip options for all providers.
+ */
+const FORMAT_OPTIONS = [
+    { label: 'MP4', value: 'mp4' },
+    { label: 'MP3', value: 'mp3' },
+];
+
+/**
+ * Extra yt-dlp args for audio-only extraction.
+ */
+function buildAudioArgs() {
+    return ['--extract-audio', '--audio-format', 'mp3'];
+}
+
+/**
+ * Check if downloadOptions request audio-only mode.
+ */
+function isAudioOnly(downloadOptions) {
+    return downloadOptions && downloadOptions.format === 'mp3';
+}
+
 module.exports = {
+    FORMAT_OPTIONS,
+    buildAudioArgs,
     buildBaseArgs,
+    isAudioOnly,
 };

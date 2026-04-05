@@ -143,7 +143,7 @@
 /* ─── Scan button ─── */
 .scan-btn {
     padding: var(--space-10) var(--space-14);
-    background: var(--accent);
+    background: var(--accent-gradient);
     border: none;
     border-radius: var(--radius-lg);
     color: #fff;
@@ -166,6 +166,36 @@
 
 .scan-btn:active {
     transform: scale(0.96);
+}
+
+.scan-btn.scanning {
+    pointer-events: none;
+    position: relative;
+    overflow: hidden;
+    animation: scanPulse 0.8s ease infinite;
+}
+
+.scan-btn.scanning::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.35) 50%,
+        transparent 100%
+    );
+    animation: scanShimmer 1s ease infinite;
+}
+
+@keyframes scanShimmer {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+}
+
+@keyframes scanPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.6; }
 }
 
 /* ─── Video preview card ─── */
@@ -298,9 +328,10 @@
 }
 
 .chip.active {
-    background: var(--accent-a14);
-    border-color: var(--accent);
-    color: var(--accent);
+    background: var(--accent-gradient);
+    background-clip: padding-box;
+    border-color: transparent;
+    color: #fff;
     transition: all var(--transition-theme);
 }
 
@@ -432,7 +463,7 @@
 .download-btn {
     width: 100%;
     padding: var(--space-13);
-    background: var(--accent);
+    background: var(--accent-gradient);
     transition: background var(--transition-theme), box-shadow var(--transition-theme), transform var(--transition-slow);
     border: none;
     border-radius: var(--radius-xl);
@@ -449,12 +480,13 @@
 }
 
 .download-btn:hover:not(:disabled) {
-    background: var(--accent-hover);
+    filter: brightness(1.15);
     transform: translateY(-1px);
     box-shadow: var(--shadow-accent-glow);
 }
 
 .download-btn:active:not(:disabled) {
+    filter: brightness(0.9);
     transform: translateY(0);
     box-shadow: none;
 }
