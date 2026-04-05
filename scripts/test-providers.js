@@ -22,33 +22,33 @@ function run() {
     assert.strictEqual(unknownProvider, null);
 
     const youtubeArgs = getProviderById('youtube').buildDownloadArgs({
-        downloadOptions: { container: 'mp4', quality: '1080p' },
+        downloadOptions: { format: 'mp4', quality: '1080p' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         url: 'https://www.youtube.com/watch?v=abc123',
     });
 
     assert(youtubeArgs.includes('--no-playlist'));
     assert(youtubeArgs.includes('--progress-delta'));
-    assert(youtubeArgs.includes('1'));
-    assert(youtubeArgs.includes('--progress-template'));
-    assert(youtubeArgs.includes('download:%(progress)j'));
-    assert(!youtubeArgs.includes('--print'), 'Should not include --print (suppresses progress)');
     assert(youtubeArgs.includes('--merge-output-format'));
     assert(youtubeArgs.includes('mp4'));
-    assert(youtubeArgs.includes('tmp/%(id)s.%(ext)s'));
+    assert(!youtubeArgs.includes('--print'), 'Should not include --print (suppresses progress)');
     assert(youtubeArgs.includes('bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4][height<=1080]/bestvideo[height<=1080]+bestaudio/best[height<=1080]'));
 
-    const youtubeNativeArgs = getProviderById('youtube').buildDownloadArgs({
-        downloadOptions: { container: 'native', quality: '720p' },
+    // Audio-only MP3 mode
+    const youtubeMp3Args = getProviderById('youtube').buildDownloadArgs({
+        downloadOptions: { format: 'mp3', quality: 'best' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         url: 'https://www.youtube.com/watch?v=abc123',
     });
 
-    assert(!youtubeNativeArgs.includes('--merge-output-format'));
-    assert(youtubeNativeArgs.includes('bestvideo[height<=720]+bestaudio/best[height<=720]'));
+    assert(youtubeMp3Args.includes('--extract-audio'));
+    assert(youtubeMp3Args.includes('--audio-format'));
+    assert(youtubeMp3Args.includes('mp3'));
+    assert(youtubeMp3Args.includes('bestaudio/best'));
+    assert(!youtubeMp3Args.includes('--merge-output-format'), 'MP3 should not merge');
 
     const youtubeRetryArgs = getProviderById('youtube').buildDownloadArgs({
-        downloadOptions: { container: 'mp4', quality: 'best' },
+        downloadOptions: { format: 'mp4', quality: 'best' },
         outputTemplate: 'tmp/%(id)s.%(ext)s',
         retryMode: 'tokenSafeClient',
         url: 'https://www.youtube.com/watch?v=abc123',

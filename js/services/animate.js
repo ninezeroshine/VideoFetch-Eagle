@@ -82,26 +82,20 @@ function springPop(target, options) {
  * The indicator stretches slightly mid-transit, then settles with soft spring.
  */
 function elasticSlide(target, fromX, fromW, toX, toW) {
-    var midX = (fromX + toX) / 2;
-    var distance = Math.abs(toX - fromX);
-    // Subtle stretch: 12% wider than average of both widths at midpoint
-    var avgW = (fromW + toW) / 2;
-    var midW = avgW + distance * 0.12;
+    var fX = Math.round(fromX);
+    var fW = Math.round(fromW);
+    var tX = Math.round(toX);
+    var tW = Math.round(toW);
 
     animate(
         target,
-        {
-            transform: [
-                'translateX(' + fromX + 'px)',
-                'translateX(' + midX + 'px)',
-                'translateX(' + toX + 'px)',
-            ],
-            width: [
-                fromW + 'px',
-                midW + 'px',
-                toW + 'px',
-            ],
-        },
+        { transform: ['translateX(' + fX + 'px)', 'translateX(' + tX + 'px)'] },
+        { easing: EASING.springSlide }
+    );
+
+    animate(
+        target,
+        { width: [fW + 'px', tW + 'px'] },
         { easing: EASING.springSlide }
     );
 }

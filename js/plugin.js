@@ -26,6 +26,7 @@ function loadAppModules() {
     const providerModule = requireFromPlugin('js/providers/index.js');
     const clipboardModule = requireFromPlugin('js/services/clipboard.js');
     const fileDiscoveryModule = requireFromPlugin('js/services/fileDiscovery.js');
+    const metadataModule = requireFromPlugin('js/services/metadata.js');
     const progressParserModule = requireFromPlugin('js/services/progressParser.js');
     const ytdlpModule = requireFromPlugin('js/services/ytdlp.js');
     const constantsModule = requireFromPlugin('js/utils/constants.js');
@@ -42,6 +43,7 @@ function loadAppModules() {
         detectYtdlp: ytdlpModule.detectYtdlp,
         eagleAdapter,
         extractFilePathFromLine: fileDiscoveryModule.extractFilePathFromLine,
+        fetchRawMetadata: metadataModule.fetchRawMetadata,
         findByPrefix: fileDiscoveryModule.findByPrefix,
         getProviderById: providerModule.getProviderById,
         getState: stateModule.getState,
@@ -80,15 +82,21 @@ function getImplementedProviderIds() {
         .map((provider) => provider.id);
 }
 
-function applyProvider(provider, skipAnimation) {
+function applyProvider(provider, skipAnimation, metadata) {
     const downloadOptions = typeof provider.getDownloadOptions === 'function'
-        ? provider.getDownloadOptions()
+        ? provider.getDownloadOptions(metadata || null)
         : null;
 
     app.setSelectedProviderId(provider.id);
     app.saveSelectedProvider(localStorage, provider.id);
     app.animateModule.setTheme(provider.id);
     ui.setSelectedProvider(provider.id, getImplementedProviderIds(), skipAnimation);
+
+    if (metadata) {
+        ui.showPreview(metadata);
+    } else if (app.getState().selectedProviderId !== provider.id) {
+        ui.hidePreview();
+    }
 
     if (skipAnimation) {
         ui.setProviderForm(provider, { previousDefaultTags, providerOptions: downloadOptions });
@@ -439,13 +447,27 @@ async function pasteFromClipboard() {
 
         ui.setUrl(clipboardText);
         ui.clearStatus();
+        ui.hidePreview();
 
         const resolvedProvider = app.resolveProvider(clipboardText);
 
-        if (resolvedProvider) {
-            applyProvider(resolvedProvider);
-        } else {
+        if (!resolvedProvider) {
             ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
+            return;
+        }
+
+        if (resolvedProvider.supportsMetadata && app.getState().ytdlpPath) {
+            ui.setStatus('Scanning video info...', 'loading');
+
+            const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, clipboardText);
+            const metadata = typeof resolvedProvider.parseMetadata === 'function'
+                ? resolvedProvider.parseMetadata(raw)
+                : null;
+
+            ui.clearStatus();
+            applyProvider(resolvedProvider, false, metadata);
+        } else {
+            applyProvider(resolvedProvider);
         }
     } catch (error) {
         ui.setStatus('Cannot read clipboard: ' + error.message, 'error');
@@ -477,7 +499,7 @@ async function autoDetectClipboard() {
     }
 }
 
-function scanUrl() {
+async function scanUrl() {
     const url = ui.getUrl();
 
     if (!url) {
@@ -494,7 +516,25 @@ function scanUrl() {
     }
 
     ui.clearStatus();
-    applyProvider(provider);
+    ui.hidePreview();
+
+    if (provider.supportsMetadata && app.getState().ytdlpPath) {
+        ui.setStatus('Scanning video info...', 'loading');
+
+        const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, url);
+        app.eagleAdapter.logInfo('[VideoFetch] Metadata raw: ' + (raw ? 'OK (' + (raw.title || 'no title') + ')' : 'NULL'));
+
+        const metadata = typeof provider.parseMetadata === 'function'
+            ? provider.parseMetadata(raw)
+            : null;
+
+        app.eagleAdapter.logInfo('[VideoFetch] Metadata parsed: ' + (metadata ? JSON.stringify({ title: metadata.title, thumb: metadata.thumbnail ? 'yes' : 'no', qualities: metadata.qualities.length }) : 'NULL'));
+
+        ui.clearStatus();
+        applyProvider(provider, false, metadata);
+    } else {
+        applyProvider(provider);
+    }
 }
 
 function handleReuseUrl(index) {

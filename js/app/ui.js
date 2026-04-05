@@ -259,6 +259,10 @@ function isSelectOption(optionDefinition) {
     return (optionDefinition.type || optionDefinition.control) === 'select';
 }
 
+function isChipOption(optionDefinition) {
+    return optionDefinition.type === 'chips';
+}
+
 function createUi(options) {
     const {
         onClearHistory,
@@ -277,6 +281,7 @@ function createUi(options) {
         historySection: document.getElementById('historySection'),
         installButton: document.getElementById('installBtn'),
         pasteButton: document.getElementById('pasteBtn'),
+        previewCard: document.getElementById('previewCard'),
         scanButton: document.getElementById('scanBtn'),
         progressFill: document.getElementById('progressFill'),
         progressInfo: document.getElementById('progressInfo'),
@@ -549,6 +554,47 @@ function createUi(options) {
 
         optionConfig.schema.forEach((optionDefinition, index) => {
             const optionKey = getOptionKey(optionDefinition, index);
+
+            if (isChipOption(optionDefinition)) {
+                const chipRow = document.createElement('div');
+                chipRow.className = 'chip-row option-row';
+
+                const label = document.createElement('div');
+                label.className = 'chip-row-label';
+                label.textContent = optionDefinition.label || 'Option';
+                chipRow.appendChild(label);
+
+                const group = document.createElement('div');
+                group.className = 'chip-group';
+                const choices = normalizeOptionChoices(optionDefinition);
+                const fallbackValue = getOptionDefaultValue(optionDefinition);
+                const requestedValue = nextValues[optionKey] != null ? String(nextValues[optionKey]) : fallbackValue;
+                const selectedValue = choices.some((c) => c.value === requestedValue) ? requestedValue : fallbackValue;
+
+                currentProviderOptionValues[optionKey] = selectedValue;
+
+                choices.forEach((choice) => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip' + (choice.value === selectedValue ? ' active' : '');
+                    chip.textContent = choice.label;
+                    chip.dataset.value = choice.value;
+
+                    chip.addEventListener('click', () => {
+                        group.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+                        chip.classList.add('active');
+                        currentProviderOptionValues[optionKey] = choice.value;
+                        providerOptionStateByProviderId[provider.id] = Object.assign({}, currentProviderOptionValues);
+                    });
+
+                    group.appendChild(chip);
+                });
+
+                chipRow.appendChild(group);
+                elements.providerOptions.appendChild(chipRow);
+                return;
+            }
+
             const row = document.createElement('div');
             row.className = `option-row${isSelectOption(optionDefinition) ? ' option-row-control' : ''}`;
             row.appendChild(createOptionInfo(optionDefinition));
@@ -651,6 +697,32 @@ function createUi(options) {
         indicator.classList.add('visible');
     }
 
+    function showPreview(metadata) {
+        if (!metadata) {
+            hidePreview();
+            return;
+        }
+
+        // Build preview HTML directly — avoids Chromium 107 img+overflow layout collapse
+        var html = '';
+
+        if (metadata.thumbnail) {
+            html += '<div class="preview-thumb" style="background-image:url(\'' + metadata.thumbnail.replace(/'/g, "\\'") + '\')"></div>';
+        }
+
+        if (metadata.title) {
+            html += '<div class="preview-title">' + escapeHtml(metadata.title) + '</div>';
+        }
+
+        elements.previewCard.innerHTML = html;
+        elements.previewCard.style.display = 'block';
+    }
+
+    function hidePreview() {
+        elements.previewCard.innerHTML = '';
+        elements.previewCard.style.display = 'none';
+    }
+
     function getUrl() {
         return elements.urlInput.value.trim();
     }
@@ -669,7 +741,7 @@ function createUi(options) {
         }
 
         return currentProviderOptionSchema.reduce((values, optionDefinition, index) => {
-            if (!isSelectOption(optionDefinition)) {
+            if (!isSelectOption(optionDefinition) && !isChipOption(optionDefinition)) {
                 return values;
             }
 
@@ -759,6 +831,7 @@ function createUi(options) {
         getProviderOptions,
         getTags,
         getUrl,
+        hidePreview,
         renderHistory,
         resetProgress,
         resetDownloadButton,
@@ -767,6 +840,7 @@ function createUi(options) {
         setSelectedProvider,
         setStatus,
         setUrl,
+        showPreview,
         showProgress,
         updateProgress,
         updateYtdlpStatus,
