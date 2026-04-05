@@ -99,3 +99,29 @@
 }
 
 .install-btn:hover { background: rgba(245, 158, 11, 0.25); }
+
+.warning-actions {
+    display: flex;
+    gap: var(--space-8);
+    margin-top: var(--space-8);
+}
+
+.auto-install-btn {
+    padding: var(--space-7) var(--space-14);
+    background: var(--accent);
+    border: none;
+    border-radius: var(--space-6);
+    color: #fff;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+}
+
+.auto-install-btn:hover {
+    filter: brightness(1.15);
+}

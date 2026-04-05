@@ -82,10 +82,10 @@ function springPop(target, options) {
  * The indicator stretches slightly mid-transit, then settles with soft spring.
  */
 function elasticSlide(target, fromX, fromW, toX, toW) {
-    var fX = Math.round(fromX);
-    var fW = Math.round(fromW);
-    var tX = Math.round(toX);
-    var tW = Math.round(toW);
+    const fX = Math.round(fromX);
+    const fW = Math.round(fromW);
+    const tX = Math.round(toX);
+    const tW = Math.round(toW);
 
     animate(
         target,

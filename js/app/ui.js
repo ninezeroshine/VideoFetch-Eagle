@@ -265,6 +265,8 @@ function isChipOption(optionDefinition) {
 
 function createUi(options) {
     const {
+        onAutoInstallFfmpeg,
+        onAutoInstallYtdlp,
         onClearHistory,
         onDownload,
         onOpenInstallGuide,
@@ -275,6 +277,8 @@ function createUi(options) {
     } = options;
 
     const elements = {
+        autoInstallFfmpegButton: document.getElementById('autoInstallFfmpegBtn'),
+        autoInstallYtdlpButton: document.getElementById('autoInstallYtdlpBtn'),
         clearHistoryButton: document.getElementById('historyClearBtn'),
         downloadButton: document.getElementById('downloadBtn'),
         historyList: document.getElementById('historyList'),
@@ -298,6 +302,7 @@ function createUi(options) {
         tagsInput: document.getElementById('tagsInput'),
         urlInput: document.getElementById('urlInput'),
         urlLabel: document.getElementById('urlLabel'),
+        ffmpegBanner: document.getElementById('ffmpegBanner'),
         warningBanner: document.getElementById('warningBanner'),
         ytdlpIndicator: document.getElementById('ytdlpIndicator'),
         ytdlpText: document.getElementById('ytdlpText'),
@@ -316,6 +321,8 @@ function createUi(options) {
     elements.downloadButton.onclick = onDownload;
     elements.clearHistoryButton.addEventListener('click', onClearHistory);
     elements.installButton.addEventListener('click', onOpenInstallGuide);
+    elements.autoInstallYtdlpButton.addEventListener('click', onAutoInstallYtdlp);
+    elements.autoInstallFfmpegButton.addEventListener('click', onAutoInstallFfmpeg);
 
     function setStatus(message, type) {
         elements.statusBox.classList.add('visible');
@@ -464,6 +471,10 @@ function createUi(options) {
         elements.ytdlpText.textContent = isReady ? 'yt-dlp ready' : 'yt-dlp missing';
         elements.warningBanner.classList.toggle('visible', !isReady);
         elements.downloadButton.disabled = !isReady;
+    }
+
+    function updateFfmpegStatus(isReady) {
+        elements.ffmpegBanner.classList.toggle('visible', !isReady);
     }
 
     function setDownloadButtonLoading() {
@@ -678,15 +689,15 @@ function createUi(options) {
     }
 
     function positionTabIndicator(providerId) {
-        var indicator = document.getElementById('tabIndicator');
-        var activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
+        const indicator = document.getElementById('tabIndicator');
+        const activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
 
         if (!indicator || !activeTab) {
             return;
         }
 
-        var tabsRect = activeTab.parentElement.getBoundingClientRect();
-        var tabRect = activeTab.getBoundingClientRect();
+        const tabsRect = activeTab.parentElement.getBoundingClientRect();
+        const tabRect = activeTab.getBoundingClientRect();
 
         indicatorX = tabRect.left - tabsRect.left;
         indicatorW = tabRect.width;
@@ -697,25 +708,72 @@ function createUi(options) {
         indicator.classList.add('visible');
     }
 
+    function formatDuration(seconds) {
+        if (!seconds || seconds <= 0) {
+            return '';
+        }
+
+        const h =Math.floor(seconds / 3600);
+        const m =Math.floor((seconds % 3600) / 60);
+        const s =seconds % 60;
+
+        if (h > 0) {
+            return h + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        return m + ':' + String(s).padStart(2, '0');
+    }
+
+    function formatViewCount(count) {
+        if (!count || count <= 0) {
+            return '';
+        }
+
+        if (count >= 1000000) {
+            return (count / 1000000).toFixed(1).replace(/\.0$/, '') + 'M views';
+        }
+
+        if (count >= 1000) {
+            return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'K views';
+        }
+
+        return count + ' views';
+    }
+
     function showPreview(metadata) {
         if (!metadata) {
             hidePreview();
             return;
         }
 
-        // Build preview HTML directly — avoids Chromium 107 img+overflow layout collapse
-        var html = '';
+        const thumbUrl = (metadata.thumbnail || '').replace(/'/g, "\\'");
+        const durationText = formatDuration(metadata.duration);
+        const viewText = formatViewCount(metadata.viewCount);
 
-        if (metadata.thumbnail) {
-            html += '<div class="preview-thumb" style="background-image:url(\'' + metadata.thumbnail.replace(/'/g, "\\'") + '\')"></div>';
+        const thumbHtml = '<div class="preview-thumb-wrap">'
+            + '<div class="preview-thumb" style="background-image:url(\'' + thumbUrl + '\')"></div>'
+            + (durationText ? '<div class="preview-duration">' + durationText + '</div>' : '')
+            + '</div>';
+
+        const metaParts = [];
+
+        if (metadata.channel) {
+            metaParts.push(escapeHtml(metadata.channel));
         }
 
-        if (metadata.title) {
-            html += '<div class="preview-title">' + escapeHtml(metadata.title) + '</div>';
+        if (viewText) {
+            metaParts.push(viewText);
         }
 
-        elements.previewCard.innerHTML = html;
-        elements.previewCard.style.display = 'block';
+        const infoHtml = '<div class="preview-info">'
+            + '<div class="preview-title">' + escapeHtml(metadata.title || '') + '</div>'
+            + (metaParts.length > 0
+                ? '<div class="preview-meta">' + metaParts.join('<span class="preview-meta-dot"></span>') + '</div>'
+                : '')
+            + '</div>';
+
+        elements.previewCard.innerHTML = thumbHtml + infoHtml;
+        elements.previewCard.style.display = 'flex';
     }
 
     function hidePreview() {
@@ -758,17 +816,17 @@ function createUi(options) {
     let indicatorW = 0;
 
     function moveTabIndicator(anim, providerId) {
-        var indicator = document.getElementById('tabIndicator');
-        var activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
+        const indicator = document.getElementById('tabIndicator');
+        const activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
 
         if (!indicator || !activeTab) {
             return;
         }
 
-        var tabsRect = activeTab.parentElement.getBoundingClientRect();
-        var tabRect = activeTab.getBoundingClientRect();
-        var toX = tabRect.left - tabsRect.left;
-        var toW = tabRect.width;
+        const tabsRect = activeTab.parentElement.getBoundingClientRect();
+        const tabRect = activeTab.getBoundingClientRect();
+        const toX = tabRect.left - tabsRect.left;
+        const toW = tabRect.width;
 
         if (indicatorW === 0) {
             // First render — no animation, just position
@@ -782,14 +840,14 @@ function createUi(options) {
     }
 
     function animateProviderSwitch(provider, options) {
-        var anim = options.animateModule;
-        var container = elements.providerOptions;
-        var oldRows = container.querySelectorAll('.option-row');
+        const anim = options.animateModule;
+        const container = elements.providerOptions;
+        const oldRows = container.querySelectorAll('.option-row');
 
         moveTabIndicator(anim, provider.id);
 
         if (oldRows.length > 0) {
-            var outAnim = anim.animate(
+            const outAnim = anim.animate(
                 oldRows,
                 { opacity: [1, 0], transform: ['translateY(0px)', 'translateY(-4px)'] },
                 { duration: anim.DURATION.fast, easing: anim.EASING.out }
@@ -800,7 +858,7 @@ function createUi(options) {
 
                 setProviderForm(provider, options);
 
-                var newRows = container.querySelectorAll('.option-row');
+                const newRows = container.querySelectorAll('.option-row');
 
                 if (newRows.length > 0) {
                     anim.staggerIn(newRows, { y: 8, interval: 0.04 });
@@ -809,7 +867,7 @@ function createUi(options) {
         } else {
             setProviderForm(provider, options);
 
-            var newRows = container.querySelectorAll('.option-row');
+            const newRows = container.querySelectorAll('.option-row');
 
             if (newRows.length > 0) {
                 anim.staggerIn(newRows, { y: 8, interval: 0.04 });
@@ -842,6 +900,7 @@ function createUi(options) {
         setUrl,
         showPreview,
         showProgress,
+        updateFfmpegStatus,
         updateProgress,
         updateYtdlpStatus,
     };

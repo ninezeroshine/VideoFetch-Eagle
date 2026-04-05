@@ -9,7 +9,7 @@ const { exec } = require('child_process');
  */
 function fetchRawMetadata(ytdlpPath, url) {
     return new Promise((resolve) => {
-        var cmd = '"' + ytdlpPath + '" --dump-json --no-download --no-playlist -- "' + url + '"';
+        const cmd ='"' + ytdlpPath + '" --dump-json --no-download --no-playlist -- "' + url + '"';
 
         exec(cmd, { shell: true, timeout: 20000, maxBuffer: 5 * 1024 * 1024 }, (error, stdout) => {
             if (error || !stdout) {

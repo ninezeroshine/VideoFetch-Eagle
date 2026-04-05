@@ -25,6 +25,7 @@ function loadAppModules() {
     const uiModule = requireFromPlugin('js/app/ui.js');
     const providerModule = requireFromPlugin('js/providers/index.js');
     const clipboardModule = requireFromPlugin('js/services/clipboard.js');
+    const binManager = requireFromPlugin('js/services/binManager.js');
     const fileDiscoveryModule = requireFromPlugin('js/services/fileDiscovery.js');
     const metadataModule = requireFromPlugin('js/services/metadata.js');
     const progressParserModule = requireFromPlugin('js/services/progressParser.js');
@@ -32,7 +33,9 @@ function loadAppModules() {
     const constantsModule = requireFromPlugin('js/utils/constants.js');
 
     app = {
+        IMPORT_ANNOTATION: constantsModule.IMPORT_ANNOTATION,
         INSTALL_GUIDE_URL: constantsModule.INSTALL_GUIDE_URL,
+        URL_NOT_RECOGNIZED: constantsModule.URL_NOT_RECOGNIZED,
         addHistoryItem: historyModule.addHistoryItem,
         animateModule,
         cleanupSessionFile: ytdlpModule.cleanupSessionFile,
@@ -41,6 +44,10 @@ function loadAppModules() {
         createDownloadSession: ytdlpModule.createDownloadSession,
         createUi: uiModule.createUi,
         detectYtdlp: ytdlpModule.detectYtdlp,
+        checkSystemFfmpeg: binManager.checkSystemFfmpeg,
+        downloadFfmpeg: binManager.downloadFfmpeg,
+        downloadYtdlp: binManager.downloadYtdlp,
+        getLocalFfmpegPath: binManager.getLocalFfmpegPath,
         eagleAdapter,
         extractFilePathFromLine: fileDiscoveryModule.extractFilePathFromLine,
         fetchRawMetadata: metadataModule.fetchRawMetadata,
@@ -128,6 +135,67 @@ async function refreshYtdlpStatus() {
     const executablePath = await app.detectYtdlp();
     app.setYtdlpPath(executablePath);
     ui.updateYtdlpStatus(Boolean(executablePath));
+}
+
+async function autoInstallYtdlp() {
+    ui.setStatus('Downloading yt-dlp...', 'loading');
+    ui.showProgress(true);
+    ui.resetProgress();
+
+    try {
+        const installedPath = await app.downloadYtdlp(function (pct) {
+            updateProgressState({
+                info: pct + '% downloaded',
+                label: 'Installing yt-dlp...',
+                pct: pct,
+                stage: 'downloading',
+            });
+        });
+
+        app.setYtdlpPath(installedPath);
+        ui.updateYtdlpStatus(true);
+        ui.clearStatus();
+        ui.showProgress(false);
+        app.eagleAdapter.showNotification({ title: 'Video Fetch', body: 'yt-dlp installed successfully.' });
+        await refreshDependencyStatus();
+    } catch (error) {
+        app.eagleAdapter.logError('[VideoFetch] Auto-install failed: ' + error.message);
+        ui.showProgress(false);
+        ui.setStatus('Install failed: ' + error.message, 'error');
+    }
+}
+
+async function autoInstallFfmpeg() {
+    ui.setStatus('Downloading ffmpeg (~130 MB)...', 'loading');
+    ui.showProgress(true);
+    ui.resetProgress();
+
+    try {
+        await app.downloadFfmpeg(function (pct) {
+            updateProgressState({
+                info: pct + '% downloaded',
+                label: 'Installing ffmpeg...',
+                pct: pct,
+                stage: 'downloading',
+            });
+        });
+
+        ui.clearStatus();
+        ui.showProgress(false);
+        app.eagleAdapter.showNotification({ title: 'Video Fetch', body: 'ffmpeg installed successfully.' });
+        await refreshDependencyStatus();
+    } catch (error) {
+        app.eagleAdapter.logError('[VideoFetch] ffmpeg install failed: ' + error.message);
+        ui.showProgress(false);
+        ui.setStatus('ffmpeg install failed: ' + error.message, 'error');
+    }
+}
+
+async function refreshDependencyStatus() {
+    await refreshYtdlpStatus();
+
+    const hasFfmpeg = app.getLocalFfmpegPath() || await app.checkSystemFfmpeg();
+    ui.updateFfmpegStatus(Boolean(hasFfmpeg));
 }
 
 function handleProgressLine(line) {
@@ -238,7 +306,7 @@ async function addToEagle(sourceUrl, filePath, provider) {
         const folderIds = selectedFolders.map((folder) => folder.id).filter(Boolean);
 
         const importOptions = {
-            annotation: 'Downloaded by Video Fetch plugin',
+            annotation: app.IMPORT_ANNOTATION,
             name,
             tags,
             website: sourceUrl,
@@ -332,7 +400,7 @@ async function startDownload() {
     const resolvedProvider = app.resolveProvider(url);
 
     if (!resolvedProvider) {
-        ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
+        ui.setStatus(app.URL_NOT_RECOGNIZED, 'error');
         return;
     }
 
@@ -437,6 +505,32 @@ function stopDownload() {
     ui.setStatus('Download cancelled.', 'error');
 }
 
+async function scanAndApplyProvider(url) {
+    const provider = app.resolveProvider(url);
+
+    if (!provider) {
+        ui.setStatus(app.URL_NOT_RECOGNIZED, 'error');
+        return;
+    }
+
+    ui.clearStatus();
+    ui.hidePreview();
+
+    if (provider.supportsMetadata && app.getState().ytdlpPath) {
+        ui.setStatus('Scanning video info...', 'loading');
+
+        const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, url);
+        const metadata = typeof provider.parseMetadata === 'function'
+            ? provider.parseMetadata(raw)
+            : null;
+
+        ui.clearStatus();
+        applyProvider(provider, false, metadata);
+    } else {
+        applyProvider(provider);
+    }
+}
+
 async function pasteFromClipboard() {
     try {
         const clipboardText = await app.readClipboardText(app.eagleAdapter);
@@ -446,29 +540,7 @@ async function pasteFromClipboard() {
         }
 
         ui.setUrl(clipboardText);
-        ui.clearStatus();
-        ui.hidePreview();
-
-        const resolvedProvider = app.resolveProvider(clipboardText);
-
-        if (!resolvedProvider) {
-            ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
-            return;
-        }
-
-        if (resolvedProvider.supportsMetadata && app.getState().ytdlpPath) {
-            ui.setStatus('Scanning video info...', 'loading');
-
-            const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, clipboardText);
-            const metadata = typeof resolvedProvider.parseMetadata === 'function'
-                ? resolvedProvider.parseMetadata(raw)
-                : null;
-
-            ui.clearStatus();
-            applyProvider(resolvedProvider, false, metadata);
-        } else {
-            applyProvider(resolvedProvider);
-        }
+        await scanAndApplyProvider(clipboardText);
     } catch (error) {
         ui.setStatus('Cannot read clipboard: ' + error.message, 'error');
     }
@@ -508,33 +580,7 @@ async function scanUrl() {
         return;
     }
 
-    const provider = app.resolveProvider(url);
-
-    if (!provider) {
-        ui.setStatus('URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.', 'error');
-        return;
-    }
-
-    ui.clearStatus();
-    ui.hidePreview();
-
-    if (provider.supportsMetadata && app.getState().ytdlpPath) {
-        ui.setStatus('Scanning video info...', 'loading');
-
-        const raw = await app.fetchRawMetadata(app.getState().ytdlpPath, url);
-        app.eagleAdapter.logInfo('[VideoFetch] Metadata raw: ' + (raw ? 'OK (' + (raw.title || 'no title') + ')' : 'NULL'));
-
-        const metadata = typeof provider.parseMetadata === 'function'
-            ? provider.parseMetadata(raw)
-            : null;
-
-        app.eagleAdapter.logInfo('[VideoFetch] Metadata parsed: ' + (metadata ? JSON.stringify({ title: metadata.title, thumb: metadata.thumbnail ? 'yes' : 'no', qualities: metadata.qualities.length }) : 'NULL'));
-
-        ui.clearStatus();
-        applyProvider(provider, false, metadata);
-    } else {
-        applyProvider(provider);
-    }
+    await scanAndApplyProvider(url);
 }
 
 function handleReuseUrl(index) {
@@ -565,6 +611,8 @@ function openInstallGuide() {
 
 async function initialize() {
     ui = app.createUi({
+        onAutoInstallFfmpeg: autoInstallFfmpeg,
+        onAutoInstallYtdlp: autoInstallYtdlp,
         onClearHistory: handleClearHistory,
         onDownload: startDownload,
         onOpenInstallGuide: openInstallGuide,
@@ -578,7 +626,7 @@ async function initialize() {
     app.setHistory(history);
     ui.renderHistory(history);
 
-    await refreshYtdlpStatus();
+    await refreshDependencyStatus();
     app.cleanupStaleSessions();
 }
 

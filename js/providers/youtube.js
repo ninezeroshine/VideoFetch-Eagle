@@ -29,7 +29,7 @@ function pickBestThumbnail(raw) {
     }
 
     if (Array.isArray(raw.thumbnails) && raw.thumbnails.length > 0) {
-        var best = raw.thumbnails[raw.thumbnails.length - 1];
+        const best =raw.thumbnails[raw.thumbnails.length - 1];
         return best.url || best;
     }
 
@@ -52,7 +52,9 @@ function parseMetadata(raw) {
     return {
         title: raw.title || raw.fulltitle || '',
         thumbnail: pickBestThumbnail(raw),
+        channel: raw.channel || raw.uploader || '',
         duration: raw.duration || 0,
+        viewCount: raw.view_count || 0,
         qualities: qualityOptions,
         hasAudio: hasAudioFormats(raw.formats),
     };
@@ -61,7 +63,7 @@ function parseMetadata(raw) {
 /* ─── Download options ─── */
 
 function getDownloadOptions(metadata) {
-    var qualities = [
+    let qualities = [
         { label: 'Best', value: 'best' },
         { label: '1080p', value: '1080p' },
         { label: '720p', value: '720p' },
@@ -72,7 +74,7 @@ function getDownloadOptions(metadata) {
         qualities = metadata.qualities;
     }
 
-    var formatOptions = [
+    const formatOptions = [
         { label: 'MP4', value: 'mp4' },
     ];
 

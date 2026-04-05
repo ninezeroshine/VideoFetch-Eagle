@@ -88,11 +88,44 @@
         <div class="warning-text">
             <div class="warning-title">yt-dlp not found</div>
             <div class="warning-body">
-                Install yt-dlp to enable downloads.<br>
-                Run: <code>pip install yt-dlp</code><br>
-                or: <code>winget install yt-dlp</code>
+                Required for downloading videos. Click below to install automatically.
             </div>
-            <button class="install-btn" id="installBtn" type="button">Install Guide</button>
+            <div class="warning-actions">
+                <button class="auto-install-btn" id="autoInstallYtdlpBtn" type="button">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 13H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    Auto-install yt-dlp
+                </button>
+                <button class="install-btn" id="installBtn" type="button">Manual Guide</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ffmpeg missing warning -->
+    <div class="warning-banner ffmpeg-banner" id="ffmpegBanner">
+        <div class="warning-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1.5L1 14.5H15L8 1.5Z" stroke="#f59e0b" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M8 6V9" stroke="#f59e0b" stroke-width="1.5" stroke-linecap="round"/>
+                <circle cx="8" cy="11.5" r="0.75" fill="#f59e0b"/>
+            </svg>
+        </div>
+        <div class="warning-text">
+            <div class="warning-title">ffmpeg not found</div>
+            <div class="warning-body">
+                Required for merging video + audio streams. Without it, downloads may have no sound.
+            </div>
+            <div class="warning-actions">
+                <button class="auto-install-btn" id="autoInstallFfmpegBtn" type="button">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 2V10M8 10L5 7M8 10L11 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M2 13H14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                    Auto-install ffmpeg (~130 MB)
+                </button>
+            </div>
         </div>
     </div>
 

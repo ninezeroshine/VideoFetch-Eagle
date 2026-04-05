@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const { getLocalYtdlpPath } = require('./binManager');
 const eagleAdapter = require('../adapters/eagle');
 const { TEMP_DIRECTORY_NAME } = require('../utils/constants');
 
@@ -54,6 +55,14 @@ function checkExecutable(command) {
 }
 
 async function detectYtdlp() {
+    // Check auto-installed local binary first
+    const localPath = getLocalYtdlpPath();
+
+    if (localPath && await checkExecutable(localPath)) {
+        return localPath;
+    }
+
+    // Then check system PATH and common install locations
     const candidates = getExecutableCandidates();
 
     for (const candidate of candidates) {
