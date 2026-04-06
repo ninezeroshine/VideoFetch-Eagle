@@ -69,6 +69,27 @@ body[data-provider="instagram"] {
     --shadow-accent-dot:  0 0 12px rgba(193, 53, 132, 0.45);
 }
 
+/* ─── Vimeo — Cyan Blue ─── */
+body[data-provider="vimeo"] {
+    --accent:        #00ADEF;
+    --accent-hover:  #33c4f5;
+    --accent-dark:   #008bbf;
+    --accent-gradient: linear-gradient(135deg, #008bbf, #00ADEF, #33c4f5);
+
+    --accent-a02: rgba(0, 173, 239, 0.02);
+    --accent-a07: rgba(0, 173, 239, 0.07);
+    --accent-a10: rgba(0, 173, 239, 0.1);
+    --accent-a12: rgba(0, 173, 239, 0.12);
+    --accent-a14: rgba(0, 173, 239, 0.14);
+    --accent-a24: rgba(0, 173, 239, 0.24);
+    --accent-a36: rgba(0, 173, 239, 0.36);
+    --accent-a45: rgba(0, 173, 239, 0.45);
+
+    --shadow-accent-glow: 0 6px 20px rgba(0, 173, 239, 0.3);
+    --shadow-bar-glow:    0 0 16px rgba(0, 173, 239, 0.24);
+    --shadow-accent-dot:  0 0 12px rgba(0, 173, 239, 0.45);
+}
+
 /* ─── TikTok — Red + Cyan ─── */
 body[data-provider="tiktok"] {
     --accent:        #fe2c55;

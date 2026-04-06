@@ -4,8 +4,9 @@ const twitterProvider = require('./twitter');
 const youtubeProvider = require('./youtube');
 const instagramProvider = require('./instagram');
 const tiktokProvider = require('./tiktok');
+const vimeoProvider = require('./vimeo');
 
-const providers = [twitterProvider, youtubeProvider, instagramProvider, tiktokProvider];
+const providers = [twitterProvider, youtubeProvider, instagramProvider, tiktokProvider, vimeoProvider];
 
 function listProviders() {
     return providers.slice();

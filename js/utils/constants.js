@@ -10,7 +10,7 @@ const INSTALL_GUIDE_URL = 'https://github.com/yt-dlp/yt-dlp#installation';
 const VIDEO_EXTENSIONS = ['.mp4', '.mkv', '.webm', '.mov', '.m4v', '.avi', '.flv', '.ts', '.mp3', '.m4a', '.opus', '.ogg'];
 const DOWNLOAD_BUTTON_LABEL = 'Download Video';
 const IMPORT_ANNOTATION = 'Downloaded by Video Fetch plugin';
-const URL_NOT_RECOGNIZED = 'URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok.';
+const URL_NOT_RECOGNIZED = 'URL not recognized. Supported: Twitter, YouTube, Instagram, TikTok, Vimeo.';
 
 module.exports = {
     DEFAULT_PROVIDER_ID,

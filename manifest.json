@@ -1,18 +1,18 @@
 {
     "id": "849964f9-eae4-4f43-8314-54d73b3f39e8",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "platform": "all",
     "arch": "all",
     "name": "Video Fetch",
     "logo": "/logo.png",
-    "keywords": ["video", "download", "twitter", "x", "youtube", "instagram", "tiktok", "social media", "yt-dlp"],
+    "keywords": ["video", "download", "twitter", "x", "youtube", "instagram", "tiktok", "vimeo", "social media", "yt-dlp"],
     "main": {
         "url": "index.html",
         "width": 560,
         "height": 880,
         "minWidth": 480,
         "minHeight": 500,
-        "frame": true,
+        "frame": false,
         "resizable": true,
         "alwaysOnTop": false,
         "backgroundColor": "#0d0d0d"

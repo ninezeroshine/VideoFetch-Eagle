@@ -2,7 +2,7 @@
    Layout — Header, content area, footer
    ═══════════════════════════════════════════════ */
 
-/* ─── Header ─── */
+/* ─── Header (frameless title bar + branding) ─── */
 .header {
     display: flex;
     align-items: center;
@@ -10,6 +10,9 @@
     padding: var(--space-18) var(--space-20) var(--space-14);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
+    -webkit-app-region: drag;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 .logo-mark {
@@ -36,6 +39,61 @@
     font-size: var(--text-sm);
     color: var(--text-muted);
     margin-top: 1px;
+}
+
+/* ─── Title bar window controls ─── */
+.titlebar-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+    width: 34px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: background var(--transition-fast), color var(--transition-fast);
+    padding: 0;
+}
+
+.titlebar-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.titlebar-btn:active {
+    background: var(--accent-a14);
+}
+
+.titlebar-btn-pin.pinned {
+    color: var(--accent);
+}
+
+.titlebar-btn-pin.pinned .titlebar-icon-pin {
+    transform: rotate(-45deg);
+}
+
+.titlebar-btn-pin .titlebar-icon-pin {
+    transition: transform var(--transition-normal);
+}
+
+.titlebar-btn-close:hover {
+    background: #e81123;
+    color: #fff;
+}
+
+.titlebar-btn-close:active {
+    background: #c50f1f;
+    color: #fff;
 }
 
 /* ─── Main content ─── */
@@ -80,3 +138,35 @@
 .ytdlp-indicator.ok      { background: var(--success); }
 .ytdlp-indicator.missing  { background: var(--error); }
 .ytdlp-text               { color: var(--text-muted); }
+
+.ytdlp-version {
+    color: var(--text-muted);
+    font-size: var(--text-2xs);
+    font-family: var(--font-mono);
+}
+
+.ytdlp-update-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all var(--transition-fast);
+}
+
+.ytdlp-update-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-a07);
+}
+
+.ytdlp-update-btn.updating {
+    pointer-events: none;
+    animation: spin 1s linear infinite;
+}

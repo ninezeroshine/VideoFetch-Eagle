@@ -29,7 +29,9 @@ function loadAppModules() {
     const progressParserModule = requireFromPlugin('js/services/progressParser.js');
     const providerModule = requireFromPlugin('js/providers/index.js');
     const queueModule = requireFromPlugin('js/services/downloadQueue.js');
+    const shortcutsModule = requireFromPlugin('js/app/shortcuts.js');
     const stateModule = requireFromPlugin('js/app/state.js');
+    const titlebarModule = requireFromPlugin('js/app/titlebar.js');
     const uiModule = requireFromPlugin('js/app/ui.js');
     const ytdlpModule = requireFromPlugin('js/services/ytdlp.js');
     const constantsModule = requireFromPlugin('js/utils/constants.js');
@@ -47,16 +49,20 @@ function loadAppModules() {
         clearHistory: historyModule.clearHistory,
         createDownloadSession: ytdlpModule.createDownloadSession,
         createQueue: queueModule.createQueue,
+        createShortcuts: shortcutsModule.createShortcuts,
+        createTitlebar: titlebarModule.createTitlebar,
         createUi: uiModule.createUi,
         detectYtdlp: ytdlpModule.detectYtdlp,
         downloadFfmpeg: binManager.downloadFfmpeg,
         downloadYtdlp: binManager.downloadYtdlp,
+        fetchLatestYtdlpVersion: binManager.fetchLatestYtdlpVersion,
         eagleAdapter,
         extractFilePathFromLine: fileDiscoveryModule.extractFilePathFromLine,
         fetchRawMetadata: metadataModule.fetchRawMetadata,
         fetchThumbnailDataUri: metadataModule.fetchThumbnailDataUri,
         findByPrefix: fileDiscoveryModule.findByPrefix,
         getLocalFfmpegPath: binManager.getLocalFfmpegPath,
+        getLocalYtdlpVersion: binManager.getLocalYtdlpVersion,
         getProviderById: providerModule.getProviderById,
         getState: stateModule.getState,
         listProviders: providerModule.listProviders,
@@ -71,6 +77,7 @@ function loadAppModules() {
         setHistory: stateModule.setHistory,
         setSelectedProviderId: stateModule.setSelectedProviderId,
         setYtdlpPath: stateModule.setYtdlpPath,
+        updateYtdlp: binManager.updateYtdlp,
     };
 
     return app;
@@ -149,8 +156,8 @@ async function autoInstallYtdlp() {
     ui.setStatus('Downloading yt-dlp...', 'loading');
 
     try {
-        const installedPath = await app.downloadYtdlp(function (pct) {
-            ui.setStatus('Installing yt-dlp... ' + pct + '%', 'loading');
+        const installedPath = await app.downloadYtdlp(function (pct, info) {
+            ui.setStatus(pct >= 0 ? 'Installing yt-dlp... ' + pct + '%' : 'Installing yt-dlp... ' + info, 'loading');
         });
 
         app.setYtdlpPath(installedPath);
@@ -167,8 +174,8 @@ async function autoInstallFfmpeg() {
     ui.setStatus('Downloading ffmpeg (~130 MB)...', 'loading');
 
     try {
-        await app.downloadFfmpeg(function (pct) {
-            ui.setStatus('Installing ffmpeg... ' + pct + '%', 'loading');
+        await app.downloadFfmpeg(function (pct, info) {
+            ui.setStatus(pct >= 0 ? 'Installing ffmpeg... ' + pct + '%' : 'Installing ffmpeg... ' + info, 'loading');
         });
 
         ui.clearStatus();
@@ -393,7 +400,60 @@ function handleClearHistory() {
 
 function handleModeSwitch(mode) {
     app.setActiveTab(mode);
-    ui.setMode(mode);
+    ui.setMode(mode, app.animateModule);
+}
+
+async function checkAndUpdateYtdlp() {
+    var state = app.getState();
+
+    if (!state.ytdlpPath) {
+        ui.setStatus('yt-dlp is not installed.', 'error');
+        return;
+    }
+
+    var updateBtn = document.getElementById('ytdlpUpdateBtn');
+    var versionEl = document.getElementById('ytdlpVersion');
+
+    updateBtn.classList.add('updating');
+    ui.setStatus('Checking for yt-dlp updates...', 'loading');
+
+    try {
+        var results = await Promise.all([
+            app.getLocalYtdlpVersion(state.ytdlpPath),
+            app.fetchLatestYtdlpVersion(),
+        ]);
+
+        var currentVersion = results[0];
+        var latestVersion = results[1];
+
+        if (!latestVersion) {
+            ui.setStatus('Could not check for updates.', 'error');
+            updateBtn.classList.remove('updating');
+            return;
+        }
+
+        if (currentVersion === latestVersion) {
+            ui.setStatus('yt-dlp is up to date (' + currentVersion + ').', 'success');
+            updateBtn.classList.remove('updating');
+            return;
+        }
+
+        ui.setStatus('Updating yt-dlp: ' + (currentVersion || '?') + ' \u2192 ' + latestVersion + '...', 'loading');
+
+        await app.updateYtdlp(function (pct, info) {
+            ui.setStatus(pct >= 0 ? 'Updating yt-dlp... ' + pct + '%' : 'Updating yt-dlp... ' + info, 'loading');
+        });
+
+        await refreshYtdlpStatus();
+        var newVersion = await app.getLocalYtdlpVersion(app.getState().ytdlpPath);
+        versionEl.textContent = newVersion ? 'v' + newVersion : '';
+        ui.setStatus('yt-dlp updated to ' + (newVersion || latestVersion) + '.', 'success');
+        app.eagleAdapter.showNotification({ title: app.PLUGIN_NAME, body: 'yt-dlp updated successfully.' });
+    } catch (error) {
+        ui.setStatus('Update failed: ' + error.message, 'error');
+    }
+
+    updateBtn.classList.remove('updating');
 }
 
 function openInstallGuide() {
@@ -403,6 +463,8 @@ function openInstallGuide() {
 /* ─── Initialize ─── */
 
 async function initialize() {
+    app.createTitlebar();
+
     queue = app.createQueue();
 
     queue.init({
@@ -438,11 +500,34 @@ async function initialize() {
         onStopDownload: handleStopDownload,
     });
 
+    app.createShortcuts({
+        onPaste: pasteFromClipboard,
+        onDownload: handleDownload,
+        onCancel: function () { if (queue) { queue.cancelAll(); } },
+    });
+
+    ui.setMode('single');
+
     const history = app.loadHistory(localStorage);
     app.setHistory(history);
     ui.renderHistory(history);
 
     await refreshDependencyStatus();
+
+    var updateBtn = document.getElementById('ytdlpUpdateBtn');
+    var versionEl = document.getElementById('ytdlpVersion');
+
+    if (app.getState().ytdlpPath) {
+        updateBtn.style.display = '';
+        updateBtn.addEventListener('click', checkAndUpdateYtdlp);
+
+        app.getLocalYtdlpVersion(app.getState().ytdlpPath).then(function (version) {
+            if (version) {
+                versionEl.textContent = 'v' + version;
+            }
+        });
+    }
+
     app.cleanupStaleSessions();
 }
 

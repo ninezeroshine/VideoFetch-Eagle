@@ -44,12 +44,18 @@ function ensureBinDirectory() {
     return dir;
 }
 
+var REQUEST_TIMEOUT_MS = 30000;
+var STALL_TIMEOUT_MS = 30000;
+var REDIRECT_CODES = [301, 302, 303, 307, 308];
+
 function httpsGetFollowRedirects(url, maxRedirects) {
     const remaining = maxRedirects != null ? maxRedirects : 5;
 
     return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location && remaining > 0) {
+        const req = https.get(url, { timeout: REQUEST_TIMEOUT_MS }, (res) => {
+            var isRedirect = REDIRECT_CODES.indexOf(res.statusCode) !== -1;
+
+            if (isRedirect && res.headers.location && remaining > 0) {
                 res.resume();
                 httpsGetFollowRedirects(res.headers.location, remaining - 1).then(resolve, reject);
                 return;
@@ -62,7 +68,13 @@ function httpsGetFollowRedirects(url, maxRedirects) {
             }
 
             resolve(res);
-        }).on('error', reject);
+        });
+
+        req.on('timeout', function () {
+            req.destroy(new Error('Connection timed out'));
+        });
+
+        req.on('error', reject);
     });
 }
 
@@ -73,20 +85,37 @@ function downloadToFile(url, targetPath, onProgress) {
         return new Promise((resolve, reject) => {
             const totalBytes = parseInt(res.headers['content-length'], 10) || 0;
             let downloadedBytes = 0;
+            let stallTimer = null;
 
             const file = fs.createWriteStream(tempPath);
 
+            function resetStallTimer() {
+                if (stallTimer) { clearTimeout(stallTimer); }
+                stallTimer = setTimeout(function () {
+                    res.destroy(new Error('Download stalled — no data received for 30s'));
+                }, STALL_TIMEOUT_MS);
+            }
+
+            resetStallTimer();
+
             res.on('data', (chunk) => {
                 downloadedBytes += chunk.length;
+                resetStallTimer();
 
-                if (onProgress && totalBytes > 0) {
-                    onProgress(Math.round((downloadedBytes / totalBytes) * 100));
+                if (onProgress) {
+                    if (totalBytes > 0) {
+                        onProgress(Math.round((downloadedBytes / totalBytes) * 100));
+                    } else {
+                        var mb = (downloadedBytes / 1048576).toFixed(1);
+                        onProgress(-1, mb + ' MB downloaded');
+                    }
                 }
             });
 
             res.pipe(file);
 
             file.on('finish', () => {
+                if (stallTimer) { clearTimeout(stallTimer); }
                 file.close(() => {
                     try {
                         if (fs.existsSync(targetPath)) {
@@ -102,12 +131,14 @@ function downloadToFile(url, targetPath, onProgress) {
             });
 
             file.on('error', (err) => {
+                if (stallTimer) { clearTimeout(stallTimer); }
                 file.close();
                 try { fs.unlinkSync(tempPath); } catch (_e) { /* cleanup */ }
                 reject(err);
             });
 
             res.on('error', (err) => {
+                if (stallTimer) { clearTimeout(stallTimer); }
                 file.close();
                 try { fs.unlinkSync(tempPath); } catch (_e) { /* cleanup */ }
                 reject(err);
@@ -265,11 +296,71 @@ function findFileRecursive(dir, filename) {
     return null;
 }
 
+/* ─── yt-dlp version + update ─── */
+
+function getLocalYtdlpVersion(ytdlpPath) {
+    return new Promise((resolve) => {
+        if (!ytdlpPath) {
+            resolve(null);
+            return;
+        }
+
+        exec('"' + ytdlpPath + '" --version', { timeout: 5000 }, (error, stdout) => {
+            if (error) {
+                resolve(null);
+                return;
+            }
+
+            resolve(stdout.trim() || null);
+        });
+    });
+}
+
+function fetchLatestYtdlpVersion() {
+    var apiUrl = 'https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest';
+
+    return new Promise((resolve) => {
+        var req = https.get(apiUrl, {
+            timeout: REQUEST_TIMEOUT_MS,
+            headers: { 'User-Agent': 'VideoFetch' },
+        }, (res) => {
+            if (res.statusCode !== 200) {
+                res.resume();
+                resolve(null);
+                return;
+            }
+
+            var body = '';
+
+            res.on('data', (chunk) => { body += chunk; });
+
+            res.on('end', () => {
+                try {
+                    var data = JSON.parse(body);
+                    resolve(data.tag_name || null);
+                } catch (_e) {
+                    resolve(null);
+                }
+            });
+        });
+
+        req.on('timeout', function () { req.destroy(); resolve(null); });
+        req.on('error', function () { resolve(null); });
+    });
+}
+
+function updateYtdlp(onProgress) {
+    return downloadYtdlp(onProgress);
+}
+
 module.exports = {
     checkSystemFfmpeg,
     downloadFfmpeg,
     downloadYtdlp,
+    fetchLatestYtdlpVersion,
     getBinDirectory,
     getLocalFfmpegPath,
     getLocalYtdlpPath,
+    getLocalYtdlpVersion,
+    updateYtdlp,
 };

@@ -112,6 +112,7 @@ function createUi(options) {
         historyList: document.getElementById('historyList'),
         historySection: document.getElementById('historySection'),
         installButton: document.getElementById('installBtn'),
+        modeIndicator: document.getElementById('modeIndicator'),
         modeTabs: Array.from(document.querySelectorAll('.mode-tab')),
         pasteButton: document.getElementById('pasteBtn'),
         previewCard: document.getElementById('previewCard'),
@@ -366,24 +367,69 @@ function createUi(options) {
         }
     }
 
-    function positionTabIndicator(providerId) {
-        const indicator = document.getElementById('tabIndicator');
-        const activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
+    /**
+     * Factory: creates position() and move() helpers for a sliding
+     * tab indicator.  Eliminates duplication between provider tabs
+     * and mode tabs — both share the same slide logic.
+     */
+    function createIndicatorDriver(indicator, opts) {
+        var state = { x: 0, w: 0 };
+        var setHeight = Boolean(opts && opts.setHeight);
 
-        if (!indicator || !activeTab) {
-            return;
+        function position(activeTab) {
+            if (!indicator || !activeTab) {
+                return;
+            }
+
+            var containerRect = activeTab.parentElement.getBoundingClientRect();
+            var tabRect = activeTab.getBoundingClientRect();
+
+            state.x = tabRect.left - containerRect.left;
+            state.w = tabRect.width;
+
+            indicator.style.transform = 'translateX(' + state.x + 'px)';
+            indicator.style.width = state.w + 'px';
+
+            if (setHeight) {
+                indicator.style.height = tabRect.height + 'px';
+            }
+
+            indicator.classList.add('visible');
         }
 
-        const tabsRect = activeTab.parentElement.getBoundingClientRect();
-        const tabRect = activeTab.getBoundingClientRect();
+        function move(anim, activeTab) {
+            if (!indicator || !activeTab) {
+                return;
+            }
 
-        indicatorX = tabRect.left - tabsRect.left;
-        indicatorW = tabRect.width;
+            if (state.w === 0) {
+                position(activeTab);
+                return;
+            }
 
-        indicator.style.transform = 'translateX(' + indicatorX + 'px)';
-        indicator.style.width = indicatorW + 'px';
-        indicator.style.height = tabRect.height + 'px';
-        indicator.classList.add('visible');
+            var containerRect = activeTab.parentElement.getBoundingClientRect();
+            var tabRect = activeTab.getBoundingClientRect();
+            var toX = tabRect.left - containerRect.left;
+            var toW = tabRect.width;
+
+            anim.elasticSlide(indicator, state.x, state.w, toX, toW);
+            state.x = toX;
+            state.w = toW;
+        }
+
+        return { position: position, move: move };
+    }
+
+    var providerIndicator = createIndicatorDriver(
+        document.getElementById('tabIndicator'),
+        { setHeight: true }
+    );
+
+    var modeIndicator = createIndicatorDriver(elements.modeIndicator);
+
+    function positionTabIndicator(providerId) {
+        var activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
+        providerIndicator.position(activeTab);
     }
 
     function formatDuration(seconds) {
@@ -491,31 +537,9 @@ function createUi(options) {
         elements.urlInput.focus();
     }
 
-    let indicatorX = 0;
-    let indicatorW = 0;
-
     function moveTabIndicator(anim, providerId) {
-        const indicator = document.getElementById('tabIndicator');
-        const activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
-
-        if (!indicator || !activeTab) {
-            return;
-        }
-
-        const tabsRect = activeTab.parentElement.getBoundingClientRect();
-        const tabRect = activeTab.getBoundingClientRect();
-        const toX = tabRect.left - tabsRect.left;
-        const toW = tabRect.width;
-
-        if (indicatorW === 0) {
-            // First render — no animation, just position
-            positionTabIndicator(providerId);
-            return;
-        }
-
-        anim.elasticSlide(indicator, indicatorX, indicatorW, toX, toW);
-        indicatorX = toX;
-        indicatorW = toW;
+        var activeTab = document.querySelector('.platform-tab[data-provider-id="' + providerId + '"]');
+        providerIndicator.move(anim, activeTab);
     }
 
     function animateProviderSwitch(provider, options) {
@@ -563,10 +587,18 @@ function createUi(options) {
 
     /* ─── Mode switching (Single / Batch) ─── */
 
-    function setMode(mode) {
+    function setMode(mode, animateModule) {
         elements.modeTabs.forEach(function (tab) {
             tab.classList.toggle('active', tab.dataset.mode === mode);
         });
+
+        var activeTab = document.querySelector('.mode-tab[data-mode="' + mode + '"]');
+
+        if (animateModule) {
+            modeIndicator.move(animateModule, activeTab);
+        } else {
+            modeIndicator.position(activeTab);
+        }
 
         elements.singleMode.style.display = mode === 'single' ? '' : 'none';
         elements.batchMode.style.display = mode === 'batch' ? '' : 'none';
@@ -598,7 +630,7 @@ function createUi(options) {
 
         const lines = text.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
         const supported = lines.filter(function (l) {
-            return /twitter\.com|x\.com|youtube\.com|youtu\.be|instagram\.com|tiktok\.com/i.test(l);
+            return /twitter\.com|x\.com|youtube\.com|youtu\.be|instagram\.com|tiktok\.com|vimeo\.com/i.test(l);
         });
 
         elements.batchSummary.innerHTML = '<span class="batch-count">' + supported.length + '</span> supported link'
@@ -627,6 +659,15 @@ function createUi(options) {
             });
 
             elements.downloadList.prepend(card);
+
+            /* Animate card entry — fade-up */
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(10px)';
+            requestAnimationFrame(function () {
+                card.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            });
         }
 
         const title = card.querySelector('.download-card-title');
@@ -645,6 +686,13 @@ function createUi(options) {
 
         const isActive = item.state === 'queued' || item.state === 'scanning' || item.state === 'downloading' || item.state === 'merging';
         stopBtn.style.display = isActive ? '' : 'none';
+
+        /* Dim completed / cancelled cards */
+        if (item.state === 'done' || item.state === 'cancelled') {
+            card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+            card.style.opacity = '0.5';
+            card.style.transform = 'translateY(-2px)';
+        }
     }
 
     function updateDownloadCardProgress(id, progress) {

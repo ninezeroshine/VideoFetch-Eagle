@@ -82,6 +82,10 @@
     background: #000;
 }
 
+.platform-tab .tab-icon.vimeo-icon {
+    background: #00ADEF;
+}
+
 /* ─── Mode tabs (Single / Batch) ─── */
 .mode-tabs {
     display: flex;
@@ -90,6 +94,27 @@
     background: var(--bg-input);
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
+    position: relative;
+}
+
+/* Sliding indicator — sits behind the active mode tab */
+.mode-indicator {
+    position: absolute;
+    top: 1px;
+    left: 0;
+    height: calc(100% - 2px);
+    border-radius: calc(var(--radius-lg) - 1px);
+    background: var(--bg-card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+    z-index: 0;
+    /* initial size set by JS on first render */
+    width: 0;
+    opacity: 0;
+}
+
+.mode-indicator.visible {
+    opacity: 1;
 }
 
 .mode-tab {
@@ -103,7 +128,9 @@
     font-size: var(--text-base);
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition-normal);
+    transition: color var(--transition-normal);
+    position: relative;
+    z-index: 1;
 }
 
 .mode-tab:hover {
@@ -111,9 +138,7 @@
 }
 
 .mode-tab.active {
-    background: var(--bg-card);
     color: var(--text-primary);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* ─── Batch input ─── */
@@ -240,6 +265,23 @@
     border-radius: var(--radius-pill);
     transition: width 0.3s ease;
     width: 0%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shimmer overlay — active during download / merge only */
+.download-card.downloading .download-card-fill::after,
+.download-card.merging .download-card-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.24) 50%,
+        transparent 100%
+    );
+    animation: progressShimmer 1.5s ease infinite;
 }
 
 .download-card.done .download-card-fill {
@@ -647,13 +689,13 @@
 
 .download-btn:hover:not(:disabled) {
     filter: brightness(1.15);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.015);
     box-shadow: var(--shadow-accent-glow);
 }
 
 .download-btn:active:not(:disabled) {
     filter: brightness(0.9);
-    transform: translateY(0);
+    transform: scale(0.97);
     box-shadow: none;
 }
 
